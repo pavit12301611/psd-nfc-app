@@ -1,0 +1,122 @@
+package com.psd.nfcapp;
+
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+
+public class NfcUtils {
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+
+    // Standard NDEF URI prefix codes
+    private static final String[] URI_PREFIXES = {
+            "", "http://www.", "https://www.", "http://", "https://", "tel:", "mailto:",
+            "ftp://anonymous:anonymous@", "ftp://ftp.", "ftps://", "sftp://", "smb://",
+            "nfs://", "ftp://", "dav://", "news:", "telnet://", "imap:", "rtsp://",
+            "urn:", "pop:", "sip:", "sips:", "tftp:", "btspp://", "btl2cap://", "btgoep://",
+            "tcpobex://", "irdaobex://", "file://", "urn:epc:id:", "urn:epc:tag:",
+            "urn:epc:pat:", "urn:epc:raw:", "urn:epc:", "urn:nfc:"
+    };
+
+    public static String bytesToHex(byte[] b) {
+        if (b == null) return "";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte x : b) {
+            sb.append(HEX[(x >> 4) & 0xF]).append(HEX[x & 0xF]);
+        }
+        return sb.toString();
+    }
+
+    public static byte[] hexToBytes(String s) {
+        if (s == null) return new byte[0];
+        String clean = s.replaceAll("[^0-9A-Fa-f]", "");
+        if (clean.length() % 2 == 1) clean = "0" + clean;
+        byte[] out = new byte[clean.length() / 2];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = (byte) Integer.parseInt(clean.substring(i * 2, i * 2 + 2), 16);
+        }
+        return out;
+    }
+
+    /** Force links to https:// when the user typed a bare domain. */
+    public static String normalizeUrl(String in) {
+        String s = in == null ? "" : in.trim();
+        if (s.isEmpty()) return s;
+        String low = s.toLowerCase(Locale.US);
+        if (low.startsWith("http://") || low.startsWith("https://")) return s;
+        if (!s.contains(" ") && s.contains(".")) return "https://" + s;
+        return s;
+    }
+
+    public static boolean looksLikeLink(String s) {
+        return normalizeUrl(s).toLowerCase(Locale.US).startsWith("http");
+    }
+
+    /** Build the exact NDEF message that gets transmitted for a tile. */
+    public static NdefMessage buildMessage(NfcItem item) {
+        try {
+            if (item.rawNdefHex != null && item.rawNdefHex.length() > 0) {
+                // Scanned tag: replay the captured NDEF bytes verbatim (duplicate)
+                return new NdefMessage(hexToBytes(item.rawNdefHex));
+            }
+            if (NfcItem.KIND_LINK.equals(item.kind) || looksLikeLink(item.payload)) {
+                String url = normalizeUrl(item.payload);
+                try {
+                    return new NdefMessage(new NdefRecord[]{NdefRecord.createUri(url)});
+                } catch (Exception e) {
+                    return new NdefMessage(new NdefRecord[]{NdefRecord.createText(url, Locale.ENGLISH)});
+                }
+            }
+            if (NfcItem.KIND_SCAN.equals(item.kind)) {
+                String data = (item.tagIdHex == null ? "" : item.tagIdHex)
+                        + "|" + (item.tech == null ? "" : item.tech);
+                return new NdefMessage(new NdefRecord[]{
+                        NdefRecord.createMimeRecord("application/x-psd-tagid", data.getBytes(StandardCharsets.UTF_8))});
+            }
+            return new NdefMessage(new NdefRecord[]{
+                    NdefRecord.createText(item.payload == null ? "" : item.payload, Locale.ENGLISH)});
+        } catch (Exception e) {
+            try {
+                return new NdefMessage(new NdefRecord[]{NdefRecord.createText("psd-nfc", Locale.ENGLISH)});
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+    }
+
+    /** Human-readable description of a received NDEF message. */
+    public static String describe(NdefMessage msg) {
+        if (msg == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (NdefRecord r : msg.getRecords()) {
+            if (sb.length() > 0) sb.append(" • ");
+            short tnf = r.getTnf();
+            String type = new String(r.getType(), StandardCharsets.UTF_8);
+            byte[] p = r.getPayload();
+            if (tnf == NdefRecord.TNF_WELL_KNOWN && "U".equals(type) && p.length > 0) {
+                int prefix = p[0] & 0xFF;
+                String pre = prefix < URI_PREFIXES.length ? URI_PREFIXES[prefix] : "";
+                sb.append(pre).append(new String(p, 1, p.length - 1, StandardCharsets.UTF_8));
+            } else if (tnf == NdefRecord.TNF_WELL_KNOWN && "T".equals(type) && p.length > 1) {
+                int langLen = p[0] & 0x3F;
+                sb.append(new String(p, 1 + langLen, p.length - 1 - langLen, StandardCharsets.UTF_8));
+            } else if (tnf == NdefRecord.TNF_MIME_MEDIA) {
+                sb.append(type).append(": ").append(new String(p, StandardCharsets.UTF_8));
+            } else {
+                sb.append(type.isEmpty() ? "record" : type);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static final int[] TAG_COLORS = {
+            0xFF6EE7FF, 0xFFA5F3A5, 0xFFFFD166, 0xFFFF8FAB,
+            0xFFC4A7FF, 0xFF8AD8FF, 0xFFF6A6A6, 0xFFA6F4C5
+    };
+
+    public static int colorForTag(String tag) {
+        int h = tag == null ? 0 : tag.hashCode();
+        return TAG_COLORS[Math.abs(h) % TAG_COLORS.length];
+    }
+}
