@@ -8,3 +8,4 @@ captures/
 .externalNativeBuild/
 .cxx/
 ci-build-debug.log
+dist/
