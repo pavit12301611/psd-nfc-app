@@ -95,9 +95,15 @@ public class HceService extends HostApduService {
                 return SW_OK;
             }
             return SW_NOT_FOUND;
-        } else if (ins == 0xB0) { // READ BINARY
+        } else if (ins == 0xB0) { // READ BINARY (handle P1P2 offset + Le so larger payloads read fully)
             byte[] data = "CC".equals(currentFile) ? ccFor(ndefBytes.length) : ndefBytes;
-            return concat(data, SW_OK);
+            int p1 = apdu[2] & 0xFF, p2 = apdu[3] & 0xFF;
+            int off = ((p1 & 0x7F) << 8) | p2;
+            int le = apdu.length >= 5 ? (apdu[4] & 0xFF) : 256;
+            if (le == 0) le = 256;
+            if (off >= data.length) return SW_NOT_FOUND;
+            int end = Math.min(data.length, off + le);
+            return concat(java.util.Arrays.copyOfRange(data, off, end), SW_OK);
         }
         return SW_NOT_FOUND;
     }

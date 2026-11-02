@@ -31,6 +31,7 @@ public class AddItemActivity extends Activity {
             it.id = UUID.randomUUID().toString();
             it.kind = NfcUtils.looksLikeLink(p) ? NfcItem.KIND_LINK : NfcItem.KIND_TEXT;
             it.payload = p;
+            it.openLink = openLink.getText().toString().trim();
             it.createdAt = System.currentTimeMillis();
             for (String s : tags.getText().toString().split(",")) {
                 String t = s.trim();

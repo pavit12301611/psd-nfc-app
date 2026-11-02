@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -112,7 +114,36 @@ public class MainActivity extends Activity {
             }
         } else if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)
                 || NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
-            Toast.makeText(this, "NFC tag detected", Toast.LENGTH_SHORT).show();
+            Tag tag;
+            if (Build.VERSION.SDK_INT >= 33) {
+                tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag.class);
+            } else {
+                tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            }
+            if (tag != null) {
+                String idHex = NfcUtils.bytesToHex(tag.getId());
+                String content = null;
+                try {
+                    Ndef ndef = Ndef.get(tag);
+                    if (ndef != null) {
+                        ndef.connect();
+                        NdefMessage m = ndef.getNdefMessage();
+                        if (m != null) {
+                            String u = NfcUtils.firstUri(m);
+                            content = u != null ? u : NfcUtils.describe(m);
+                        }
+                        ndef.close();
+                    }
+                } catch (Exception ignored) {
+                }
+                if (content != null && content.startsWith("http")) {
+                    showReceivedLinkDialog(content);
+                } else if (content != null && !content.isEmpty()) {
+                    Toast.makeText(this, "Received via NFC: " + content, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "NFC tag detected — ID " + idHex, Toast.LENGTH_LONG).show();
+                }
+            }
         }
     }
 
@@ -169,7 +200,7 @@ public class MainActivity extends Activity {
                 .setMessage("1. Is phone pe koi tile tap karo → ARMED ho jayega (ya Quick Settings ka 'NFC Transmit' tile ON karo).\n\n"
                         + "2. Dono phones pe NFC ON + screen ON rakho (Android OS ki wajah se screen ON zaroori hai — koi app ise bypass nahi kar sakta).\n\n"
                         + "3. Dono phones ke back touch karo (NFC antenna upar-middle mein), 2-3 second hold karo.\n\n"
-                        + "4. Doosre phone pe link browser mein khul jayega — ya agar wahan bhi PSD NFC hai toh 'NFC link received' dialog aayega.")
+                        + "4. Doosre phone pe link seedha browser mein khul jayega (har phone mein browser hota hai). Agar wahan PSD NFC hai toh app khulega aur 'NFC link received' dialog dikhega.")
                 .setPositiveButton("Got it", null)
                 .show();
     }

@@ -51,6 +51,20 @@
         android:textColorHint="#666666"
         android:textSize="15sp" />
 
+    <EditText
+        android:id="@+id/inputOpenLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/input_bg"
+        android:hint="Link that opens on the other phone (optional — default: the link itself)"
+        android:inputType="textUri"
+        android:padding="14dp"
+        android:singleLine="true"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#666666"
+        android:textSize="15sp" />
+
     <Button
         android:id="@+id/btnSave"
         android:layout_width="match_parent"

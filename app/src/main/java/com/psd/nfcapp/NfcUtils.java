@@ -53,32 +53,74 @@ public class NfcUtils {
         return normalizeUrl(s).toLowerCase(Locale.US).startsWith("http");
     }
 
-    /** Build the exact NDEF message that gets transmitted for a tile. */
+    /**
+     * Build the exact NDEF message that gets transmitted for a tile.
+     *
+     * WORKAROUND for "No supported application to open the NFC signal":
+     * the FIRST record is ALWAYS a URI record, so any phone (no app needed,
+     * just a browser — every phone has one) opens it instead of showing that
+     * error. Scanned raw records are appended after it, and an Android App
+     * Record (AAR) is added last so phones with this app installed open the
+     * app directly.
+     */
     public static NdefMessage buildMessage(NfcItem item) {
         try {
-            if (item.rawNdefHex != null && item.rawNdefHex.length() > 0) {
-                // Scanned tag: replay the captured NDEF bytes verbatim (duplicate)
-                return new NdefMessage(hexToBytes(item.rawNdefHex));
-            }
-            if (NfcItem.KIND_LINK.equals(item.kind) || looksLikeLink(item.payload)) {
-                String url = normalizeUrl(item.payload);
-                try {
-                    return new NdefMessage(new NdefRecord[]{NdefRecord.createUri(url)});
-                } catch (Exception e) {
-                    return new NdefMessage(new NdefRecord[]{NdefRecord.createTextRecord("en", url)});
+            java.util.List<NdefRecord> recs = new java.util.ArrayList<>();
+
+            // 1) URI record first
+            String link = item.openLink == null ? "" : item.openLink.trim();
+            if (link.isEmpty()) {
+                if (NfcItem.KIND_LINK.equals(item.kind) || looksLikeLink(item.payload)) {
+                    link = normalizeUrl(item.payload);
+                } else if (NfcItem.KIND_SCAN.equals(item.kind)) {
+                    // default fallback for scanned cards: search page showing the tag ID
+                    link = "https://www.google.com/search?q=NFC-TAG-"
+                            + (item.tagIdHex == null || item.tagIdHex.isEmpty() ? "unknown" : item.tagIdHex);
                 }
             }
-            if (NfcItem.KIND_SCAN.equals(item.kind)) {
-                String data = (item.tagIdHex == null ? "" : item.tagIdHex)
-                        + "|" + (item.tech == null ? "" : item.tech);
-                return new NdefMessage(new NdefRecord[]{
-                        NdefRecord.createMime("application/x-psd-tagid", data.getBytes(StandardCharsets.UTF_8))});
+            if (!link.isEmpty()) {
+                try {
+                    recs.add(NdefRecord.createUri(normalizeUrl(link)));
+                } catch (Exception e) {
+                    try {
+                        recs.add(NdefRecord.createUri("https://www.google.com/search?q="
+                                + java.net.URLEncoder.encode(link, "UTF-8")));
+                    } catch (Exception ignored) {
+                    }
+                }
             }
-            return new NdefMessage(new NdefRecord[]{
-                    NdefRecord.createTextRecord("en", item.payload == null ? "" : item.payload)});
+
+            // 2) replay the captured raw NDEF records of a scanned tag (after the URI)
+            if (item.rawNdefHex != null && item.rawNdefHex.length() > 0) {
+                try {
+                    for (NdefRecord r : new NdefMessage(hexToBytes(item.rawNdefHex)).getRecords()) {
+                        recs.add(r);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+
+            // 3) plain payload if nothing else was added
+            if (recs.isEmpty()) {
+                if (NfcItem.KIND_SCAN.equals(item.kind)) {
+                    String data = (item.tagIdHex == null ? "" : item.tagIdHex)
+                            + "|" + (item.tech == null ? "" : item.tech);
+                    recs.add(NdefRecord.createMime("application/x-psd-tagid",
+                            data.getBytes(StandardCharsets.UTF_8)));
+                } else {
+                    recs.add(NdefRecord.createTextRecord("en", item.payload == null ? "" : item.payload));
+                }
+            }
+
+            // 4) Android App Record (must be last) — opens this app on phones that have it
+            recs.add(NdefRecord.createApplicationRecord("com.psd.nfcapp"));
+
+            return new NdefMessage(recs.toArray(new NdefRecord[0]));
         } catch (Exception e) {
             try {
-                return new NdefMessage(new NdefRecord[]{NdefRecord.createTextRecord("en", "psd-nfc")});
+                return new NdefMessage(new NdefRecord[]{
+                        NdefRecord.createUri("https://www.google.com/"),
+                        NdefRecord.createApplicationRecord("com.psd.nfcapp")});
             } catch (Exception ignored) {
                 return null;
             }

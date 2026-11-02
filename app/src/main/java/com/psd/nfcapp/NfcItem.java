@@ -15,6 +15,7 @@ public class NfcItem {
     public String id;
     public String kind;        // link | text | scan
     public String payload;     // link / text / human-readable summary for scans
+    public String openLink;    // optional: link that should open on the receiving phone
     public String rawNdefHex;  // raw NDEF message bytes (scans), may be null/empty
     public String tagIdHex;    // physical tag UID (scans), may be null/empty
     public String tech;        // tech list of scanned tag, may be null/empty

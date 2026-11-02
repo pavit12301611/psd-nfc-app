@@ -34,6 +34,20 @@
         android:textSize="12sp"
         android:visibility="gone" />
 
+    <EditText
+        android:id="@+id/inputOpenLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/input_bg"
+        android:hint="Link that opens on the other phone (optional — e.g. your business site)"
+        android:inputType="textUri"
+        android:padding="14dp"
+        android:singleLine="true"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#666666"
+        android:textSize="15sp" />
+
     <Button
         android:id="@+id/btnSave"
         android:layout_width="match_parent"

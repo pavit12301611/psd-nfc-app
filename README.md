@@ -47,6 +47,20 @@ GitHub Release asset on every push to `arena/e25bd87f-psd-nfc-app`.
 4. The other phone opens the link in the browser (or shows a "NFC link received"
    dialog if it also has PSD NFC). No app is needed on the receiving phone.
 
+### Fix: “No supported application to open the NFC signal” on the receiving phone
+This message appears when the received NFC data has **no record that any app can open**
+(e.g. a raw scanned card). Workaround built into v1.2:
+
+- **Every transmission now starts with a URI (web link) record.** Any phone — no app
+  needed, every phone has a browser — opens it automatically. No more "no supported
+  application".
+- An **Android App Record (AAR)** is appended last, so phones that DO have PSD NFC
+  installed open the app directly and show the received link dialog.
+- For **scanned ID cards / tags**, set the **“Link that opens on the other phone”**
+  field (e.g. your business website/menu/payment page). If left empty, a Google search
+  page of the tag ID opens instead. The raw scanned signal is still included in the
+  same NFC message for phones running this app.
+
 ### Troubleshooting phone-to-phone
 - **Both phones: NFC ON + screen ON.** Android OS requires the screen to be on for NFC
   transmission/reception — this is an OS security rule that **no app can bypass**
