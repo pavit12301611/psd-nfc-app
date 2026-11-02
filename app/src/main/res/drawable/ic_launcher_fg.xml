@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- NFC waves symbol -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 28,54 A 26,26 0 0 1 54,28 A 26,26 0 0 1 80,54
+                          M 34,54 A 14,14 0 0 1 54,40 A 14,14 0 0 1 74,54
+                          M 40,54 A 6,6 0 0 1 54,48 A 6,6 0 0 1 68,54" />
+</vector>

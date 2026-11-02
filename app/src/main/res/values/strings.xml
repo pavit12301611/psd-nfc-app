@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PSD NFC Link Transfer</string>
+
+    <!-- Sender screen -->
+    <string name="hint_link">Website link daalein (https://example.com)</string>
+    <string name="hint_secret">Shared secret key (dono phones par samaan rakhein)</string>
+    <string name="btn_prepare">Whitelist mein daalein aur NFC start karein</string>
+    <string name="btn_set_pin">PIN set karein</string>
+    <string name="btn_change_pin">PIN change karein</string>
+    <string name="btn_unlock">Unlock karein</string>
+    <string name="switch_always">NFC hamesha ON rakhein (background service)</string>
+    <string name="status_ready">Taiyaar hai. NFC ON rakhein.</string>
+    <string name="status_active">Active — receiver phone se tap karein</string>
+    <string name="whitelist_label">Whitelisted links:</string>
+    <string name="no_receiver_note">Note: ye link sirf us phone par khulega jisme yehi app ho aur wohi secret key ho.</string>
+
+    <!-- Errors -->
+    <string name="err_invalid_link">Sahi link daalein (http ya https se shuru hona chahiye)</string>
+    <string name="err_secret">Pehle secret key set karein</string>
+    <string name="err_wrong_key">Key match nahi ki — ye authorized receiver nahi hai</string>
+
+    <!-- PIN -->
+    <string name="pin_title">PIN Lock</string>
+    <string name="pin_verify">App kholne ke liye PIN daalein</string>
+    <string name="pin_set">Naya PIN set karein (4-6 ank)</string>
+    <string name="pin_hint">4-6 ankka PIN</string>
+    <string name="pin_confirm">Confirm karein</string>
+    <string name="pin_wrong">Galat PIN hai</string>
+
+    <!-- Foreground service / notification -->
+    <string name="nfc_active">NFC Link Transfer active hai — background mein chala raha hai</string>
+    <string name="channel_name">NFC Link Transfer</string>
+    <string name="channel_desc">NFC ko hamesha active rakhne ke liye background service</string>
+    <string name="stop">Band karein</string>
+
+    <!-- HCE -->
+    <string name="aid_description">PSD NFC encrypted link service</string>
+
+    <!-- Receiver screen -->
+    <string name="receive_title">NFC se link mila hai</string>
+    <string name="btn_decrypt">Decrypt karein</string>
+    <string name="btn_open">Browser mein kholein</string>
+</resources>

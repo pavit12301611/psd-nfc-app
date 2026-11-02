@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="color_primary">#00695C</color>
+    <color name="color_primary_dark">#004D40</color>
+    <color name="ic_launcher_bg">#00695C</color>
+    <color name="white">#FFFFFF</color>
+    <color name="link_text">#00695C</color>
+    <color name="error_red">#B3261E</color>
+</resources>

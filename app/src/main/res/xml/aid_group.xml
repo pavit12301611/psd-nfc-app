@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aid-group xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/aid_description"
+    android:category="other">
+    <aid android:name="F001020304050607" />
+</aid-group>
