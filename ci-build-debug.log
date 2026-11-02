@@ -14,8 +14,8 @@ To honour the JVM settings for this build a single-use Daemon process will be fo
 Daemon will be stopped at the end of the build 
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preReleaseBuild UP-TO-DATE
-> Task :app:javaPreCompileRelease
 > Task :app:checkReleaseAarMetadata
+> Task :app:javaPreCompileRelease
 > Task :app:generateReleaseResValues
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
@@ -27,7 +27,6 @@ Daemon will be stopped at the end of the build
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
 > Task :app:extractProguardFiles
-> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseJniLibFolders
 > Task :app:mergeReleaseNativeLibs NO-SOURCE
 > Task :app:stripReleaseDebugSymbols NO-SOURCE
@@ -36,25 +35,32 @@ Daemon will be stopped at the end of the build
 > Task :app:checkReleaseDuplicateClasses
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
+> Task :app:processReleaseManifestForPackage
+> Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
-> Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseAssets
 > Task :app:compressReleaseAssets
-> Task :app:processReleaseResources
 > Task :app:extractReleaseVersionControlInfo
+> Task :app:processReleaseJavaRes NO-SOURCE
+> Task :app:collectReleaseDependencies
+> Task :app:processReleaseResources
+> Task :app:mergeReleaseJavaResource
+> Task :app:sdkReleaseDependencyData
 
-> Task :app:compileReleaseJavaWithJavac FAILED
-/home/runner/work/psd-nfc-app/psd-nfc-app/app/src/main/java/com/psd/nfcapp/TransmitActivity.java:89: error: cannot find symbol
-                if (push != null) nfc.enableForegroundNdefPush(this, push);
-                                     ^
-  symbol:   method enableForegroundNdefPush(TransmitActivity,NdefMessage)
-  location: variable nfc of type NfcAdapter
+> Task :app:compileReleaseJavaWithJavac
+/home/runner/work/psd-nfc-app/psd-nfc-app/app/src/main/java/com/psd/nfcapp/AddItemActivity.java:34: error: cannot find symbol
+            it.openLink = openLink.getText().toString().trim();
+                          ^
+  symbol:   variable openLink
+  location: class AddItemActivity
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 1 error
+
+> Task :app:compileReleaseJavaWithJavac FAILED
 
 FAILURE: Build failed with an exception.
 
@@ -263,5 +269,5 @@ Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Com
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
 
 
-BUILD FAILED in 28s
-26 actionable tasks: 26 executed
+BUILD FAILED in 32s
+29 actionable tasks: 29 executed
