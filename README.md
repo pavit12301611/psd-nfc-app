@@ -61,15 +61,25 @@ This message appears when the received NFC data has **no record that any app can
   page of the tag ID opens instead. The raw scanned signal is still included in the
   same NFC message for phones running this app.
 
-### Troubleshooting phone-to-phone
-- **Both phones: NFC ON + screen ON.** Android OS requires the screen to be on for NFC
-  transmission/reception — this is an OS security rule that **no app can bypass**
-  (not a limit of this app; there are no other limits — any NFC phone can receive).
-- Hold the phones steady at the antenna spot for 2–3 seconds; try slight repositioning.
-- On the sending phone keep a tile armed (green banner). The app also pushes via
-  Android Beam on Samsung in addition to HCE.
-- Receiving phone: if a chooser appears, pick Browser; if PSD NFC is installed there,
-  it shows a "📲 NFC link received" dialog with an **Open link** button.
+### Troubleshooting phone-to-phone ("No supported application for this NFC tag")
+That message means the receiving phone did NOT recognise the signal as an NDEF link — it
+saw a raw tag. Checklist (most common causes first):
+
+1. **Hold for 3 full seconds** and align the **top-middle** of both phone backs (that is
+   where the NFC antenna is on Galaxy A-series). Quick taps get missed.
+2. **Both phones: NFC ON + screen ON** (lock screen OK). Screen off = OS-level block.
+3. Sending phone must show the green **● ARMED & TRANSMITTING** banner (tap a tile first),
+   and must NOT show the "⚠ NFC is OFF" warning.
+4. Try a few times with slight repositioning — the first tap after screen-on sometimes wakes
+   the NFC stack.
+
+What the app does to maximise compatibility (v1.3): the phone emulates a standard
+**Type 4 NDEF tag** (canonical 15-byte Capability Container, NDEF AID `D2760000850101`
++ Type 4 Tag AID `D2760000850100`, tolerant SELECT/READ handling), always puts a
+**URI record first** (every phone has a browser → link opens, no app needed), appends an
+**Android App Record** (phones with this app open it directly), and also pushes via
+**Android Beam** on Samsung. Receiving phone: pick Browser in the chooser, or if PSD NFC
+is installed there it shows the "📲 NFC link received" dialog.
 - Physical tags: while the Transmit screen is open, tap a blank tag to write the payload.
 
 > Note: `requireDeviceUnlock=false` is set, so transmission also works from the lock

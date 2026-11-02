@@ -5,4 +5,5 @@
     <string name="hce_service_desc">PSD NFC link transmitter</string>
     <string name="aid_group_desc">PSD NFC NDEF emulation</string>
     <string name="aid_ndef_desc">NDEF Type 4 Tag application</string>
+    <string name="aid_t4t_desc">NFC Forum Type 4 Tag</string>
 </resources>

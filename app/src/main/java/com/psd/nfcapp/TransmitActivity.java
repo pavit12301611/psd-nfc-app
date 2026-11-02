@@ -72,6 +72,9 @@ public class TransmitActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (nfc != null && !nfc.isEnabled()) {
+            status.setText("⚠ NFC is OFF on this phone — Settings → Connections → NFC and payment → ON. Then screen ON + tap backs together.");
+        }
         if (nfc != null) {
             Intent intent = new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             PendingIntent pi = PendingIntent.getActivity(this, 0, intent,

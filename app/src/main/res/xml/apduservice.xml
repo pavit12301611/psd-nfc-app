@@ -8,5 +8,8 @@
         <aid
             android:name="D2760000850101"
             android:description="@string/aid_ndef_desc" />
+        <aid
+            android:name="D2760000850100"
+            android:description="@string/aid_t4t_desc" />
     </aid-group>
 </host-apdu-service>

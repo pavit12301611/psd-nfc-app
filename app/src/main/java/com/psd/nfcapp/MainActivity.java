@@ -199,7 +199,7 @@ public class MainActivity extends Activity {
                 .setTitle("Phone-to-phone transmit kaise kare")
                 .setMessage("1. Is phone pe koi tile tap karo → ARMED ho jayega (ya Quick Settings ka 'NFC Transmit' tile ON karo).\n\n"
                         + "2. Dono phones pe NFC ON + screen ON rakho (Android OS ki wajah se screen ON zaroori hai — koi app ise bypass nahi kar sakta).\n\n"
-                        + "3. Dono phones ke back touch karo (NFC antenna upar-middle mein), 2-3 second hold karo.\n\n"
+                        + "3. Dono phones ke back touch karo — antenna TOP-middle mein hota hai — aur 3 second tak hold rakho (jaldi hatane se read miss ho jata hai).\n\n"
                         + "4. Doosre phone pe link seedha browser mein khul jayega (har phone mein browser hota hai). Agar wahan PSD NFC hai toh app khulega aur 'NFC link received' dialog dikhega.")
                 .setPositiveButton("Got it", null)
                 .show();
