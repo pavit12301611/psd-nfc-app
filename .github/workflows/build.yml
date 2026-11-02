@@ -58,8 +58,10 @@ jobs:
         run: |
           EXIT="${{ steps.build.outputs.exit }}"
           LOG=$(tail -120 /tmp/build.log)
-          gh api -X POST /repos/pavit12301611/psd-nfc-app/commits/${{ github.sha }}/comments \
-            -f body="Gradle debug build failed (exit $EXIT). Tail of /tmp/build.log:\n\n\`\`\`\n${LOG}\n\`\`\`"
+          printf '%s' "$LOG" | jq -R -s --arg exit "$EXIT" \
+            '{body: ("Gradle debug build failed (exit " + $exit + "). Tail of /tmp/build.log:\n\n\u0060\u0060\u0060\n" + . + "\n\u0060\u0060\u0060")}' \
+            | gh api -X POST /repos/pavit12301611/psd-nfc-app/commits/${{ github.sha }}/comments --input - \
+            || true
 
       - name: Upload APK artifact
         if: steps.build.outputs.exit == '0'
