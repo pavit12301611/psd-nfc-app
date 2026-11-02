@@ -44,27 +44,10 @@ jobs:
           unzip -q gradle-8.4-bin.zip
           echo "$PWD/gradle-8.4/bin" >> $GITHUB_PATH
 
-      - name: Build debug APK (capture exit code)
-        id: build
-        run: |
-          set +e
-          gradle assembleDebug --no-daemon > /tmp/build.log 2>&1
-          echo "exit=$?" >> $GITHUB_OUTPUT
-
-      - name: Post build error as commit comment
-        if: steps.build.outputs.exit != '0'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          EXIT="${{ steps.build.outputs.exit }}"
-          LOG=$(tail -120 /tmp/build.log)
-          printf '%s' "$LOG" | jq -R -s --arg exit "$EXIT" \
-            '{body: ("Gradle debug build failed (exit " + $exit + "). Tail of /tmp/build.log:\n\n\u0060\u0060\u0060\n" + . + "\n\u0060\u0060\u0060")}' \
-            | gh api -X POST /repos/pavit12301611/psd-nfc-app/commits/${{ github.sha }}/comments --input - \
-            || true
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
 
       - name: Upload APK artifact
-        if: steps.build.outputs.exit == '0'
         uses: actions/upload-artifact@v4
         with:
           name: psd-nfc-app-debug-apk
