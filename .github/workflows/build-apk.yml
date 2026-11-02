@@ -44,7 +44,19 @@ jobs:
           chmod +x gradlew
 
       - name: Build release APK (signed with signing/release-keystore.p12)
-        run: ./gradlew --no-daemon assembleRelease
+        run: |
+          ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee /tmp/build.log
+          exit "${PIPESTATUS[0]}"
+
+      - name: Push build log to branch for debugging (only on failure)
+        if: failure()
+        run: |
+          cp /tmp/build.log ci-build-debug.log
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git add -f ci-build-debug.log
+          git commit -m "ci-log: gradle build log [skip ci]" || true
+          git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}" || true
 
       - name: Inspect APK
         run: |
