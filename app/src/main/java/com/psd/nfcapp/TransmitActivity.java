@@ -98,7 +98,9 @@ public class TransmitActivity extends Activity {
         if (nfc != null) {
             nfc.disableForegroundDispatch(this);
             try {
-                nfc.disableForegroundNdefPush(this);
+                java.lang.reflect.Method m = NfcAdapter.class.getMethod(
+                        "disableForegroundNdefPush", Activity.class);
+                m.invoke(nfc, this);
             } catch (Exception ignored) {
             }
         }
