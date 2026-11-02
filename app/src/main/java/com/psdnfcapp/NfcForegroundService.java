@@ -13,15 +13,8 @@ import android.os.IBinder;
 import android.os.Looper;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
-/**
- * Foreground service that keeps the app "always active":
- * - Keeps the NFC adapter enabled (re-tries every 30s)
- * - Shows a persistent notification so the system doesn't kill the process
- * - Started on boot via BootReceiver when "NFC always ON" is chosen
- */
 public class NfcForegroundService extends Service {
     private static final int NOTIF_ID = 1001;
     private static final String CHANNEL = "psdnfc_nfc_channel";
@@ -91,9 +84,7 @@ public class NfcForegroundService extends Service {
         if (nfcAdapter != null && !nfcAdapter.isEnabled()) {
             try {
                 nfcAdapter.enable();
-            } catch (Exception e) {
-                // System toggle may block this; user must keep NFC on via quick settings.
-                android.util.Log.w("NfcForegroundService", "Could not auto-enable NFC", e);
+            } catch (Exception ignored) {
             }
         }
     }

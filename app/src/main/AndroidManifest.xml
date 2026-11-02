@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.psdnfcapp">
 
-    <!-- NFC hardware is required -->
     <uses-feature
         android:name="android.hardware.nfc"
         android:required="true" />
@@ -11,7 +10,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -21,7 +19,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PsdNfcApp">
 
-        <!-- Sender screen -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -33,12 +30,10 @@
             </intent-filter>
         </activity>
 
-        <!-- PIN lock screen -->
         <activity
             android:name=".PinActivity"
             android:exported="false" />
 
-        <!-- Receiver screen: opened when another phone taps this phone's NFC -->
         <activity
             android:name=".ReceiverActivity"
             android:exported="true">
@@ -52,13 +47,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Keeps NFC + foreground service running so the app stays "always active" -->
         <service
             android:name=".NfcForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
-        <!-- HCE service: emulates an NFC tag carrying your encrypted link -->
         <service
             android:name=".HceLinkService"
             android:exported="true"
@@ -71,7 +64,6 @@
                 android:resource="@xml/aid_group" />
         </service>
 
-        <!-- Restart foreground service on boot -->
         <receiver
             android:name=".BootReceiver"
             android:exported="true">

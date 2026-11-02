@@ -14,17 +14,11 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 import java.util.HashSet;
 import java.util.Set;
 import javax.crypto.SecretKey;
 
-/**
- * Sender screen: enter website link, set shared secret key + PIN, whitelist the
- * link, then start NFC transmission. The app stays active via NfcForegroundService
- * and advertises the encrypted NDEF payload through HceLinkService.
- */
 public class MainActivity extends AppCompatActivity {
     private EditText etLink;
     private EditText etSecret;
@@ -81,7 +75,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // If "always on" was chosen earlier, make sure the service is running.
         if (PrefHelper.getNfcAlways(this)) {
             NfcForegroundService.startIfNeeded(this);
         }
