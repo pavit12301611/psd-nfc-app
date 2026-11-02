@@ -54,3 +54,4 @@ jobs:
           name: psd-nfc-app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 90
+# retry build
