@@ -85,6 +85,23 @@ public class NfcUtils {
         }
     }
 
+    /** First URI record of a received NDEF message, or null. */
+    public static String firstUri(NdefMessage msg) {
+        if (msg == null) return null;
+        for (NdefRecord r : msg.getRecords()) {
+            if (r.getTnf() == NdefRecord.TNF_WELL_KNOWN
+                    && "U".equals(new String(r.getType(), StandardCharsets.UTF_8))) {
+                byte[] p = r.getPayload();
+                if (p.length > 0) {
+                    int prefix = p[0] & 0xFF;
+                    String pre = prefix < URI_PREFIXES.length ? URI_PREFIXES[prefix] : "";
+                    return pre + new String(p, 1, p.length - 1, StandardCharsets.UTF_8);
+                }
+            }
+        }
+        return null;
+    }
+
     /** Human-readable description of a received NDEF message. */
     public static String describe(NdefMessage msg) {
         if (msg == null) return "";

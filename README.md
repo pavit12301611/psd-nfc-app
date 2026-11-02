@@ -39,13 +39,27 @@ GitHub Release asset on every push to `arena/e25bd87f-psd-nfc-app`.
   using a hardware-backed Android Keystore key. Nothing is uploaded anywhere.
 
 ## How to transmit
-1. Open **PSD NFC** → tap a tile (it gets armed, green **● ARMED**).
-2. On the other phone: NFC ON, screen on.
-3. Bring the **backs of the two phones together** — the link/signal is delivered instantly.
+1. Open **PSD NFC** → tap a tile (it gets armed, green **● ARMED**). Or add the
+   **NFC Transmit** Quick-Settings tile and keep it ON — then the app works even closed.
+2. On the other phone: NFC ON, **screen ON** (lock screen is fine on most devices).
+3. Touch the **backs** of both phones together — the NFC antenna is near the
+   **upper-middle** of the back — and hold for 2–3 seconds.
+4. The other phone opens the link in the browser (or shows a "NFC link received"
+   dialog if it also has PSD NFC). No app is needed on the receiving phone.
 
-> Note: Android requires the transmitting phone's screen to be on for NFC transmission
-> (this is an Android security rule, same for all apps). `requireDeviceUnlock=false` is
-> set, so it also works from the lock screen on most devices.
+### Troubleshooting phone-to-phone
+- **Both phones: NFC ON + screen ON.** Android OS requires the screen to be on for NFC
+  transmission/reception — this is an OS security rule that **no app can bypass**
+  (not a limit of this app; there are no other limits — any NFC phone can receive).
+- Hold the phones steady at the antenna spot for 2–3 seconds; try slight repositioning.
+- On the sending phone keep a tile armed (green banner). The app also pushes via
+  Android Beam on Samsung in addition to HCE.
+- Receiving phone: if a chooser appears, pick Browser; if PSD NFC is installed there,
+  it shows a "📲 NFC link received" dialog with an **Open link** button.
+- Physical tags: while the Transmit screen is open, tap a blank tag to write the payload.
+
+> Note: `requireDeviceUnlock=false` is set, so transmission also works from the lock
+> screen on most devices (screen must still be on, not off).
 
 ## Build from source (on GitHub)
 Push to `arena/e25bd87f-psd-nfc-app` or run the **Build PSD NFC APK** workflow manually —

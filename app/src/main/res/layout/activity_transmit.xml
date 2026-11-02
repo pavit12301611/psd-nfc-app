@@ -58,8 +58,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="26dp"
         android:gravity="center"
-        android:maxLines="3"
-        android:text="Transmitting via NFC — bring another phone back-to-back (keep screens on)."
+        android:maxLines="5"
+        android:text="HCE + Beam dono active. Dono phones: NFC ON + screen ON. Backs touch karo (antenna upar-middle), 2-3 sec hold karo. Doosre phone pe link khul jayega."
         android:textColor="#9E9E9E"
         android:textSize="13sp" />
 

@@ -18,10 +18,30 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:layout_marginBottom="18dp"
+        android:layout_marginBottom="6dp"
         android:text="Saved NFC tiles — tap one to arm &amp; transmit. Long-press to edit."
         android:textColor="#9E9E9E"
         android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/armedBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:text="● ARMED"
+        android:textColor="#7CFC00"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/hintTransmit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:text="Transmit: dono phones pe NFC ON + screen ON → backs touch karo (antenna upar-middle). Koi limit nahi hai — koi bhi NFC phone read kar lega."
+        android:textColor="#666666"
+        android:textSize="11sp" />
 
     <FrameLayout
         android:layout_width="match_parent"

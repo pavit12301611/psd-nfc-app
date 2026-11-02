@@ -64,6 +64,7 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "NFC is not available on this device", Toast.LENGTH_LONG).show();
         }
         handleIntent(getIntent());
+        showFirstRunHelp();
     }
 
     @Override
@@ -98,9 +99,15 @@ public class MainActivity extends Activity {
                 raw = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
             }
             if (raw != null && raw.length > 0 && raw[0] instanceof NdefMessage) {
-                String desc = NfcUtils.describe((NdefMessage) raw[0]);
-                if (!desc.isEmpty()) {
-                    Toast.makeText(this, "Received via NFC: " + desc, Toast.LENGTH_LONG).show();
+                NdefMessage msg = (NdefMessage) raw[0];
+                String uri = NfcUtils.firstUri(msg);
+                if (uri != null) {
+                    showReceivedLinkDialog(uri);
+                } else {
+                    String desc = NfcUtils.describe(msg);
+                    if (!desc.isEmpty()) {
+                        Toast.makeText(this, "Received via NFC: " + desc, Toast.LENGTH_LONG).show();
+                    }
                 }
             }
         } else if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)
@@ -128,6 +135,43 @@ public class MainActivity extends Activity {
         items = store.loadAll();
         adapter.notifyDataSetChanged();
         empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
+        TextView banner = findViewById(R.id.armedBanner);
+        String armedId = HceService.getArmedId();
+        NfcItem armedItem = armedId == null ? null : store.get(armedId);
+        if (armedItem != null) {
+            banner.setVisibility(View.VISIBLE);
+            banner.setText("● ARMED & TRANSMITTING: " + shortText(armedItem));
+        } else {
+            banner.setVisibility(View.GONE);
+        }
+    }
+
+    private void showReceivedLinkDialog(String uri) {
+        new AlertDialog.Builder(this)
+                .setTitle("📲 NFC link received")
+                .setMessage(uri)
+                .setPositiveButton("Open link", (d, w) -> {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri)));
+                    } catch (Exception ignored) {
+                    }
+                })
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
+    private void showFirstRunHelp() {
+        android.content.SharedPreferences ui = getSharedPreferences("psd_nfc_ui", MODE_PRIVATE);
+        if (ui.getBoolean("seen_help", false)) return;
+        ui.edit().putBoolean("seen_help", true).apply();
+        new AlertDialog.Builder(this)
+                .setTitle("Phone-to-phone transmit kaise kare")
+                .setMessage("1. Is phone pe koi tile tap karo → ARMED ho jayega (ya Quick Settings ka 'NFC Transmit' tile ON karo).\n\n"
+                        + "2. Dono phones pe NFC ON + screen ON rakho (Android OS ki wajah se screen ON zaroori hai — koi app ise bypass nahi kar sakta).\n\n"
+                        + "3. Dono phones ke back touch karo (NFC antenna upar-middle mein), 2-3 second hold karo.\n\n"
+                        + "4. Doosre phone pe link browser mein khul jayega — ya agar wahan bhi PSD NFC hai toh 'NFC link received' dialog aayega.")
+                .setPositiveButton("Got it", null)
+                .show();
     }
 
     private void showAddChooser() {
