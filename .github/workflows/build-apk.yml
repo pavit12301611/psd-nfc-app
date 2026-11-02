@@ -80,13 +80,19 @@ jobs:
           git commit -m "ci: release APK build ${GITHUB_SHA:0:7} [skip ci]" || true
           git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}" || true
 
-      - name: Publish GitHub Release (best effort; also done from repo owner side)
+      - name: Publish GitHub Release with APK asset (direct download link)
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -x
           APK=app/build/outputs/apk/release/app-release.apk
-          if ! gh release view v1.0.0 >/dev/null 2>&1; then
-            gh release create v1.0.0 --target "$GITHUB_SHA" --title "PSD NFC v1.0.0" \
-              --notes "PSD NFC — fast & secure NFC link transmitter (Samsung Galaxy A53 5G & any NFC phone). Direct APK: https://github.com/${{ github.repository }}/releases/download/v1.0.0/app-release.apk" || true
-          fi
-          gh release upload v1.0.0 "$APK" --clobber --name app-release.apk 2>&1 || echo "release upload failed (will be uploaded from owner side)"
+          gh release view v1.0.0 >/dev/null 2>&1 || gh release create v1.0.0 --target "$GITHUB_SHA" --title "PSD NFC v1.0.0" \
+            --notes "PSD NFC — fast & secure NFC link transmitter (Samsung Galaxy A53 5G & any NFC phone). Direct APK download: https://github.com/${{ github.repository }}/releases/download/v1.0.0/app-release.apk"
+          ok=0
+          for i in 1 2 3; do
+            if gh release upload v1.0.0 "$APK" --clobber; then ok=1; break; fi
+            echo "upload attempt $i failed"; sleep 5
+          done
+          [ "$ok" = "1" ] || echo "WARN: release asset upload failed"
+          gh release view v1.0.0 --json assets --jq '.assets[].browser_download_url' || true

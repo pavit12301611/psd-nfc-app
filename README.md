@@ -8,6 +8,8 @@ and opens it in the browser).
 
 👉 **https://github.com/pavit12301611/psd-nfc-app/releases/download/v1.0.0/app-release.apk**
 
+(Raw copy also committed in this repo at `dist/app-release.apk` on branch `arena/e25bd87f-psd-nfc-app`.)
+
 Built automatically on GitHub (see `.github/workflows/build-apk.yml`) and published as a
 GitHub Release asset on every push to `arena/e25bd87f-psd-nfc-app`.
 
