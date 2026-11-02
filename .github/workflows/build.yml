@@ -29,7 +29,6 @@ jobs:
           cd "$SDK"
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux-11076708_latest.zip
-          # the zip extracts into cmdline-tools/cmdline-tools/
           mv cmdline-tools latest
           rm -f commandlinetools-linux-11076708_latest.zip
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
@@ -45,13 +44,31 @@ jobs:
           unzip -q gradle-8.4-bin.zip
           echo "$PWD/gradle-8.4/bin" >> $GITHUB_PATH
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+      - name: Build debug APK (capture log)
+        id: build
+        run: |
+          set +e
+          gradle assembleDebug --no-daemon > /tmp/build.log 2>&1
+          EXIT=$?
+          echo "exit=$EXIT" >> $GITHUB_OUTPUT
+          if [ "$EXIT" -ne 0 ]; then
+            echo "BUILD FAILED (see /tmp/build.log)"
+            tail -60 /tmp/build.log
+          fi
+
+      - name: Report build error as commit comment
+        if: steps.build.outputs.exit != '0'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          LOG=$(tail -100 /tmp/build.log)
+          gh api -X POST /repos/pavit12301611/psd-nfc-app/commits/${{ github.sha }}/comments \
+            -f body="Gradle debug build failed. Tail of /tmp/build.log:\n\n\`\`\`\n${LOG}\n\`\`\`" >/dev/null 2>&1 || true
 
       - name: Upload APK artifact
+        if: steps.build.outputs.exit == '0'
         uses: actions/upload-artifact@v4
         with:
           name: psd-nfc-app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 90
-# retry build
