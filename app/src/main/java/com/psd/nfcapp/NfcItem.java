@@ -28,6 +28,7 @@ public class NfcItem {
             o.put("id", id);
             o.put("kind", kind);
             o.put("payload", payload == null ? "" : payload);
+            o.put("openLink", openLink == null ? "" : openLink);
             o.put("rawNdefHex", rawNdefHex == null ? "" : rawNdefHex);
             o.put("tagIdHex", tagIdHex == null ? "" : tagIdHex);
             o.put("tech", tech == null ? "" : tech);
@@ -48,6 +49,7 @@ public class NfcItem {
             it.id = o.optString("id");
             it.kind = o.optString("kind", KIND_TEXT);
             it.payload = o.optString("payload");
+            it.openLink = o.optString("openLink");
             it.rawNdefHex = o.optString("rawNdefHex");
             it.tagIdHex = o.optString("tagIdHex");
             it.tech = o.optString("tech");
