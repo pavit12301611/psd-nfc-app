@@ -65,20 +65,20 @@ public class NfcUtils {
                 try {
                     return new NdefMessage(new NdefRecord[]{NdefRecord.createUri(url)});
                 } catch (Exception e) {
-                    return new NdefMessage(new NdefRecord[]{NdefRecord.createText(url, Locale.ENGLISH)});
+                    return new NdefMessage(new NdefRecord[]{NdefRecord.createTextRecord("en", url)});
                 }
             }
             if (NfcItem.KIND_SCAN.equals(item.kind)) {
                 String data = (item.tagIdHex == null ? "" : item.tagIdHex)
                         + "|" + (item.tech == null ? "" : item.tech);
                 return new NdefMessage(new NdefRecord[]{
-                        NdefRecord.createMimeRecord("application/x-psd-tagid", data.getBytes(StandardCharsets.UTF_8))});
+                        NdefRecord.createMime("application/x-psd-tagid", data.getBytes(StandardCharsets.UTF_8))});
             }
             return new NdefMessage(new NdefRecord[]{
-                    NdefRecord.createText(item.payload == null ? "" : item.payload, Locale.ENGLISH)});
+                    NdefRecord.createTextRecord("en", item.payload == null ? "" : item.payload)});
         } catch (Exception e) {
             try {
-                return new NdefMessage(new NdefRecord[]{NdefRecord.createText("psd-nfc", Locale.ENGLISH)});
+                return new NdefMessage(new NdefRecord[]{NdefRecord.createTextRecord("en", "psd-nfc")});
             } catch (Exception ignored) {
                 return null;
             }
