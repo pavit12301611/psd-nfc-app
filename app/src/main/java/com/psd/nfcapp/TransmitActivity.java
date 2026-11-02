@@ -83,10 +83,15 @@ public class TransmitActivity extends Activity {
                             new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED)
                     },
                     NfcTech.techLists());
-            // Android Beam (foreground NDEF push) — works on Samsung One UI as a second channel
+            // Android Beam (foreground NDEF push) — removed from API 34 SDK, so call via
+            // reflection; on Samsung One UI it still works as a second transmit channel.
             try {
                 NdefMessage push = NfcUtils.buildMessage(armed);
-                if (push != null) nfc.enableForegroundNdefPush(this, push);
+                if (push != null) {
+                    java.lang.reflect.Method m = NfcAdapter.class.getMethod(
+                            "enableForegroundNdefPush", Activity.class, NdefMessage.class);
+                    m.invoke(nfc, this, push);
+                }
             } catch (Exception ignored) {
             }
         }
