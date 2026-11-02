@@ -39,9 +39,11 @@ public class ScanActivity extends Activity implements NfcAdapter.ReaderCallback 
         detail = findViewById(R.id.scanDetail);
         btnSave = findViewById(R.id.btnSave);
         btnAgain = findViewById(R.id.btnAgain);
+        EditText openLink = findViewById(R.id.inputOpenLink);
 
         btnSave.setOnClickListener(v -> {
             if (captured == null) return;
+            captured.openLink = openLink.getText().toString().trim();
             new VaultStore(this).save(captured);
             HceService.setArmed(this, captured.id);
             Toast.makeText(this, "Saved & duplicating now", Toast.LENGTH_SHORT).show();

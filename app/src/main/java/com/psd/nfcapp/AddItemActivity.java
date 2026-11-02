@@ -19,6 +19,7 @@ public class AddItemActivity extends Activity {
 
         EditText payload = findViewById(R.id.inputPayload);
         EditText tags = findViewById(R.id.inputTags);
+        EditText openLink = findViewById(R.id.inputOpenLink);
         Button save = findViewById(R.id.btnSave);
 
         save.setOnClickListener(v -> {
