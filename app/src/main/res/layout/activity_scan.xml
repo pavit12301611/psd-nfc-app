@@ -76,8 +76,8 @@
             android:layout_width="140dp"
             android:layout_height="140dp"
             android:layout_marginTop="8dp"
-            android:background="@drawable/input_bg"
-            android:scaleType="centerCrop"
+            android:background="#000000"
+            android:scaleType="fitCenter"
             android:visibility="gone" />
 
         <Button

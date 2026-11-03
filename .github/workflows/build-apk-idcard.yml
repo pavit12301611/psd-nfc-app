@@ -67,10 +67,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=v1.1.0
+          TAG=v1.1.1
           APK=app/build/outputs/apk/release/app-release.apk
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" \
-            --title "PSD NFC v1.1.0 — ID Card" \
-            --notes "ID Card update: card name, photo and custom fields. Text option removed. Direct APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
+            --title "PSD NFC v1.1.1 — ID Card photo full view" \
+            --notes "ID Card update: card name, photo (full, tap to view full screen on tiles and transmit screen) and custom fields. Direct APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
           gh release upload "$TAG" "$APK" --clobber
           gh release view "$TAG" --json assets --jq '.assets[].browser_download_url'

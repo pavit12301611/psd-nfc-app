@@ -76,6 +76,7 @@ public class ScanActivity extends Activity implements NfcAdapter.ReaderCallback 
         btnAgain = findViewById(R.id.btnAgain);
 
         btnPickPhoto.setOnClickListener(v -> pickPhoto());
+        photoPreview.setOnClickListener(v -> PhotoUtil.showFullScreen(this, pendingPhoto));
         btnRemovePhoto.setOnClickListener(v -> {
             pendingPhoto = null;
             refreshPhoto();
@@ -161,7 +162,7 @@ public class ScanActivity extends Activity implements NfcAdapter.ReaderCallback 
     }
 
     private void refreshPhoto() {
-        Bitmap bmp = PhotoUtil.decode(pendingPhoto);
+        Bitmap bmp = PhotoUtil.decode(pendingPhoto, 800);
         if (bmp != null) {
             photoPreview.setImageBitmap(bmp);
             photoPreview.setVisibility(View.VISIBLE);

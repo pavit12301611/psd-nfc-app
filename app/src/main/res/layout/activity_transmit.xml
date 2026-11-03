@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
+    android:fillViewport="true">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:gravity="center_horizontal"
     android:orientation="vertical"
     android:padding="24dp">
@@ -34,6 +39,15 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:textSize="13sp" />
+
+    <ImageView
+        android:id="@+id/txPhoto"
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:layout_marginTop="16dp"
+        android:background="#000000"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
 
     <FrameLayout
         android:layout_width="220dp"
@@ -85,3 +99,4 @@
         android:textSize="14sp"
         android:textStyle="bold" />
 </LinearLayout>
+</ScrollView>

@@ -15,9 +15,10 @@
     <ImageView
         android:id="@+id/tilePhoto"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="120dp"
         android:layout_marginTop="10dp"
-        android:scaleType="centerCrop"
+        android:background="#000000"
+        android:scaleType="fitCenter"
         android:visibility="gone" />
 
     <TextView

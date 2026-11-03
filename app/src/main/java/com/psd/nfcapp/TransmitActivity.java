@@ -2,6 +2,7 @@ package com.psd.nfcapp;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.graphics.Bitmap;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.nfc.NdefMessage;
@@ -13,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,7 +49,14 @@ public class TransmitActivity extends Activity {
         writeTag = findViewById(R.id.switchWriteTag);
         Button stop = findViewById(R.id.btnStop);
 
-        payload.setText(armed.payload);
+        payload.setText(armed.displayName());
+        ImageView photo = findViewById(R.id.txPhoto);
+        Bitmap bmp = PhotoUtil.decode(armed.photoBase64, 800);
+        if (bmp != null) {
+            photo.setImageBitmap(bmp);
+            photo.setVisibility(View.VISIBLE);
+            photo.setOnClickListener(v -> PhotoUtil.showFullScreen(this, armed.photoBase64));
+        }
         StringBuilder tb = new StringBuilder();
         for (String t : armed.tags) {
             if (tb.length() > 0) tb.append("  ");

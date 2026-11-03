@@ -293,13 +293,15 @@ public class MainActivity extends Activity {
             ImageView photo = v.findViewById(R.id.tilePhoto);
             payload.setText(shortText(it));
 
-            Bitmap bmp = PhotoUtil.decode(it.photoBase64);
+            Bitmap bmp = PhotoUtil.decode(it.photoBase64, 800);
             if (bmp != null) {
                 photo.setImageBitmap(bmp);
                 photo.setVisibility(View.VISIBLE);
+                photo.setOnClickListener(pv -> PhotoUtil.showFullScreen(MainActivity.this, it.photoBase64));
             } else {
                 photo.setImageDrawable(null);
                 photo.setVisibility(View.GONE);
+                photo.setOnClickListener(null);
             }
 
             SpannableStringBuilder sb = new SpannableStringBuilder();
