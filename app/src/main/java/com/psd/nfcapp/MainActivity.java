@@ -105,7 +105,7 @@ public class MainActivity extends Activity {
             btnWriteSticker.setVisibility(View.GONE);
         } else {
             cardSummary.setText("Card: " + p.displayName()
-                    + (TextUtils.isEmpty(p.studentId) ? "" : "\nStudent ID: " + p.studentId)
+                    + (TextUtils.isEmpty(p.studentId) ? "" : "\nStudent ID (label only): " + p.studentId)
                     + "\nUID: " + (TextUtils.isEmpty(p.uidHex) ? "unknown" : p.uidHex)
                     + "\nTech: " + p.techList
                     + "\nMode: " + p.modeLabel()
@@ -237,8 +237,8 @@ public class MainActivity extends Activity {
 
     private void showFirstRunHelp() {
         android.content.SharedPreferences ui = getSharedPreferences("aakash_ui", MODE_PRIVATE);
-        if (ui.getBoolean("seen_help_v5", false)) return;
-        ui.edit().putBoolean("seen_help_v5", true).apply();
+        if (ui.getBoolean("seen_help_v6", false)) return;
+        ui.edit().putBoolean("seen_help_v6", true).apply();
         new AlertDialog.Builder(this)
                 .setTitle("Saharanpur Aakash ID card — MIFARE Classic")
                 .setMessage("1. Register YOUR OWN Aakash ID card once. Your actual card scans as "
@@ -259,8 +259,9 @@ public class MainActivity extends Activity {
                         + "change its UID; an NTAG sticker is the wrong protocol.\n\n"
                         + "5. Public Aakash sources list the Court Road, Saharanpur centre and "
                         + "CC-028 as an AIATS exam-centre code, NOT a confirmed NFC branch ID. "
-                        + "No public source names this branch's reader model or protocol; no "
-                        + "guessed credential is hardcoded.\n\n"
+                        + "No public source names this branch's reader model or protocol. Since "
+                        + "this card has no NDEF text, the app shows no guessed AAKASH / PSID / "
+                        + "branch prefix field and stores no guessed credential.\n\n"
                         + "6. This app does not record attendance. MIFARE_VERIFY_OK is not proof the "
                         + "institute reader accepted the punch. Use only for your own card, with "
                         + "institute permission.")

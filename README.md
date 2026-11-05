@@ -1,4 +1,4 @@
-# Aakash Saharanpur ID — v3.1.1 (MIFARE Classic)
+# Aakash Saharanpur ID — v3.1.2 (MIFARE Classic)
 
 A single-purpose Android app for **your own Aakash Institute, Saharanpur ID card** and the institute's NFC attendance reader. It is not a link/photo/phone-to-phone sharing app, it does not use Android Beam, and it never shows a fake "Attendance Punched" dialog. Only the institute's reader can record attendance.
 
@@ -58,7 +58,7 @@ So **no ordinary HCE code change can make the phone become this card**. The work
 
 ---
 
-## 3. What v3.1.1 adds over v3.1
+## 3. What v3.1.2 adds over v3.1
 
 1. **Correct MIFARE Classic classification.**
    - `MifareClassic` tech wins over `NfcA`; Type 2 / NTAG diagnostics are skipped for this card.
@@ -81,6 +81,7 @@ So **no ordinary HCE code change can make the phone become this card**. The work
 8. **Deep official-source research (§2.1).** README and first-run help now state that Aakash supports multiple attendance capture types, while no public source names the Saharanpur reader model. The app notes that this is institution-level capability, not proof of your branch's protocol.
 9. **Screenshot label cleanups.** `MIFARE: MIFARE Classic 1K` now uses `MifareClassic.getSize()` instead of the misleading generic `MIFARE Classic 1K/4K`; the old "exact AAKASH branch identifier must be read from this card" note is replaced with a truthful "no NDEF / PSID / branch identifier in this dump" note; a full dump with all `FFFFFFFFFFFF` keys now says so explicitly.
 10. **Nuanced dialogs.** First-run help and the registration dialog mention institute-wide Barcode/RFID/biometric support but keep your card's NFC-confirmed path. `MIFARE_VERIFY_OK` still means dump match only, **not** an attendance punch.
+11. **v3.1.2 leftover cleanup.** The v3.1.1 registration screenshots still showed `EXPECTED NDEF BRANCH PREFIX (OPTIONAL) = AAKASH` at the bottom, even though the same screen said `Aakash identifier: not found` and `No NDEF text / AAKASH / PSID credential was found`. That field is now **hidden for MIFARE Classic**, the guessed `AAKASH` default is removed, old saved profiles are sanitised on load, and `STUDENT ID / ROLL NO` is explicitly marked **label only**. The Type-2/NTAG writer also refuses to fabricate `AAKASH`, PSID or student text when no exact NDEF bytes exist. `NfcUtils.findAakashIdentifier()` is documented as reporting literal captured text only, never inventing a credential.
 
 The single card profile is encrypted locally with AES-256-GCM using an Android Keystore key. Nothing is uploaded. The older Type-2/NTAG sticker writer is retained for cards that really are Type 2, but is hidden for this MIFARE Classic card.
 
@@ -88,7 +89,7 @@ The single card profile is encrypted locally with AES-256-GCM using an Android K
 
 ## 4. Install / use
 
-APK: [release `v3.1.1-mifare-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.1.1-mifare-saharanpur/app-release.apk)
+APK: [release `v3.1.2-mifare-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.1.2-mifare-saharanpur/app-release.apk)
 
 1. Open **Aakash Saharanpur ID** → **REGISTER / REPLACE CARD** → hold the physical Aakash ID card to the back of the phone.
 2. Review: `MIFARE Classic 1K / Crypto1`, 16/16 sectors dump, key entries, block 0, SAK/ATQA.
@@ -135,7 +136,7 @@ Pushing to `arena/87e17c3d-psd-nfc-app` runs `.github/workflows/build-apk.yml`:
 - JDK 17 + Android SDK 34 + Gradle 8.7,
 - `./gradlew --no-daemon --stacktrace test assembleRelease`,
 - signed APK uploaded as artifact `aakash-mifare-saharanpur-apk`,
-- attached to release `v3.1.1-mifare-saharanpur`.
+- attached to release `v3.1.2-mifare-saharanpur`.
 
 Local:
 

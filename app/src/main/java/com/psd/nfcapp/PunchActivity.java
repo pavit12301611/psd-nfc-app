@@ -203,7 +203,10 @@ public class PunchActivity extends Activity {
             sb.append("NDEF text: ").append(p.ndefTextListText()).append('\n');
             sb.append("Aakash identifier: ").append(p.aakashId).append('\n');
             sb.append("Possible PSID: ").append(p.psidGuess).append('\n');
-            sb.append("Expected branch prefix: ").append(p.expectedBranchPrefix).append('\n');
+            sb.append("NDEF text prefix: ")
+                    .append(TextUtils.isEmpty(p.expectedBranchPrefix)
+                            ? "not set (no guessed prefix)" : p.expectedBranchPrefix)
+                    .append('\n');
             sb.append("Exact NDEF bytes: ")
                     .append(TextUtils.isEmpty(p.ndefHex) ? "0" : String.valueOf(p.ndefHex.length() / 2))
                     .append('\n');

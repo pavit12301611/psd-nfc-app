@@ -3,9 +3,10 @@ package com.psd.nfcapp;
 /**
  * Saharanpur-specific context gathered from public Aakash sources.
  *
- * These are hints for the UI only. The exact branch identifier is read from the
- * physical card's NDEF text record; we deliberately do NOT invent a full code like
- * "AAKASH-SAHARANPUR-001" because no public source confirms the card encoding.
+ * These are hints for the UI only. A branch identifier is shown only when it is
+ * actually present in a captured NDEF text record; for MIFARE Classic cards with
+ * no NDEF text we deliberately do NOT invent a full code like
+ * "AAKASH-SAHARANPUR-001", "CC-028" or a Delhi code.
  */
 public final class BranchInfo {
     public static final String CITY = "Saharanpur";
@@ -26,8 +27,11 @@ public final class BranchInfo {
     /** Aakash's official login guide describes PSID as an 11-digit centre-issued ID. */
     public static final int PSID_DIGITS = 11;
 
-    /** Only this prefix is safe to assume; the rest must come from the card. */
-    public static final String EXPECTED_NDEF_PREFIX = "AAKASH";
+    /**
+     * No branch prefix is assumed by default. Leave this empty unless an exact NDEF
+     * text record was captured; never invent "AAKASH", "CC-028" or a Delhi code.
+     */
+    public static final String NDEF_PREFIX_UNSET = "";
 
     public static String centreSummary() {
         return CENTRE_NAME + "\n" + ADDRESS + "\nPhone: " + PHONE

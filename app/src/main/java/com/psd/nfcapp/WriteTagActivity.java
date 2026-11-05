@@ -1,9 +1,7 @@
 package com.psd.nfcapp;
 
 import android.app.Activity;
-import android.nfc.FormatException;
 import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
@@ -34,6 +32,7 @@ public class WriteTagActivity extends Activity {
     private NfcAdapter adapter;
     private CardStore store;
     private CardProfile profile;
+    private Expected expected;
     private volatile boolean lockAfterWrite;
     private final AtomicReference<String> pendingAction = new AtomicReference<>(null);
 
@@ -84,10 +83,18 @@ public class WriteTagActivity extends Activity {
             return;
         }
 
-        Expected expected = buildExpected(profile);
+        expected = buildExpected(profile);
         detailText.setText(profile.compatibilityText());
         cardInfoText.setText(cardInfo(profile));
         ndefPreviewText.setText(ndefPreview(profile, expected));
+        if (expected.message == null) {
+            statusText.setText("No exact NDEF bytes are available. This app will not write a "
+                    + "guessed AAKASH / PSID / branch text to a sticker.");
+            statusText.setTextColor(0xFFB3261E);
+            btnWrite.setEnabled(false);
+            btnVerify.setEnabled(false);
+            return;
+        }
         if (adapter == null) {
             statusText.setText("This phone has no NFC adapter.");
             statusText.setTextColor(0xFFB3261E);
@@ -121,6 +128,10 @@ public class WriteTagActivity extends Activity {
     }
 
     private void arm(String action) {
+        if (expected == null || expected.message == null) {
+            setStatus("No exact NDEF bytes are available; no guessed text will be written.", false);
+            return;
+        }
         if (adapter == null || !adapter.isEnabled()) {
             setStatus("NFC is OFF or unavailable. Turn it on first.", false);
             return;
@@ -145,7 +156,12 @@ public class WriteTagActivity extends Activity {
             setButtonsEnabled(true);
             return;
         }
-        Expected expected = buildExpected(p);
+        expected = buildExpected(p);
+        if (expected.message == null) {
+            setStatus(expected.note, false);
+            setButtonsEnabled(true);
+            return;
+        }
         try {
             if (!isType2Tag(tag)) {
                 setStatus("This is not an NFC-A / Type 2 / NTAG tag. Use a blank NTAG213/215/216 sticker.",
@@ -266,17 +282,14 @@ public class WriteTagActivity extends Activity {
                 e.exact = true;
                 e.note = "exact captured NDEF bytes";
                 return e;
-            } catch (FormatException ignored) {
-                // fall through to a reconstructed text record
             } catch (Exception ignored) {
-                // fall through to a reconstructed text record
+                e.note = "Captured NDEF bytes could not be parsed; no guessed AAKASH / PSID / "
+                        + "branch text will be written.";
+                return e;
             }
         }
-        String text = !TextUtils.isEmpty(p.aakashId) ? p.aakashId
-                : (!TextUtils.isEmpty(p.studentId) ? p.studentId : BranchInfo.EXPECTED_NDEF_PREFIX);
-        e.message = new NdefMessage(new NdefRecord[]{NdefRecord.createTextRecord("en", text)});
-        e.exact = false;
-        e.note = "reconstructed text record \"" + text + "\" (no exact NDEF bytes captured)";
+        e.note = "No exact NDEF bytes were captured; no guessed AAKASH / PSID / branch text "
+                + "will be written.";
         return e;
     }
 
@@ -301,6 +314,11 @@ public class WriteTagActivity extends Activity {
     }
 
     private String ndefPreview(CardProfile p, Expected expected) {
+        if (expected.message == null) {
+            return "Payload: " + expected.note
+                    + "\nExact bytes: NO"
+                    + "\nNo guessed AAKASH / PSID / student / branch identifier is written.";
+        }
         byte[] bytes = expected.message.toByteArray();
         String hex = NfcUtils.bytesToHex(bytes);
         if (hex.length() > 400) hex = hex.substring(0, 400) + "…";

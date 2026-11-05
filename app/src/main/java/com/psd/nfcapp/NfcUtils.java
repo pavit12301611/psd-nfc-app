@@ -245,6 +245,10 @@ public final class NfcUtils {
         return findAakashIdentifier(ndefTexts(ndef));
     }
 
+    /**
+     * Reports a literal AAKASH token only when it already exists in captured NDEF text.
+     * It does NOT invent a branch ID or use "AAKASH" as a credential.
+     */
     public static String findAakashIdentifier(List<String> texts) {
         if (texts == null) return "";
         for (String raw : texts) {

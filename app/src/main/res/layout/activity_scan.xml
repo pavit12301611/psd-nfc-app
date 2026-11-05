@@ -71,7 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="STUDENT ID (OPTIONAL)"
+            android:text="STUDENT ID / ROLL NO (LABEL ONLY, OPTIONAL)"
             android:textColor="#9E9E9E"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -82,7 +82,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:background="@drawable/input_bg"
-            android:hint="Your Aakash student / roll number"
+            android:hint="For your notes only; not an NFC credential"
             android:inputType="text"
             android:padding="14dp"
             android:singleLine="true"
@@ -90,28 +90,35 @@
             android:textColorHint="#666666"
             android:textSize="14sp" />
 
-        <TextView
+        <LinearLayout
+            android:id="@+id/branchPrefixBlock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="EXPECTED NDEF BRANCH PREFIX (OPTIONAL)"
-            android:textColor="#9E9E9E"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/inputBranchPrefix"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/input_bg"
-            android:hint="AAKASH (read from card; do not guess CC-028 / Delhi codes)"
-            android:inputType="text"
-            android:padding="14dp"
-            android:singleLine="true"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#666666"
-            android:textSize="14sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="NDEF TEXT PREFIX (FROM CARD, OPTIONAL)"
+                android:textColor="#9E9E9E"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/inputBranchPrefix"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/input_bg"
+                android:hint="Leave empty unless exact NDEF text was captured"
+                android:inputType="text"
+                android:padding="14dp"
+                android:singleLine="true"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#666666"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"

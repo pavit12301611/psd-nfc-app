@@ -85,7 +85,8 @@ public class CardProfile {
     public List<String> ndefTexts = new ArrayList<>();
     public String aakashId;
     public String psidGuess;
-    public String expectedBranchPrefix = BranchInfo.EXPECTED_NDEF_PREFIX;
+    /** Empty unless an exact NDEF text prefix was captured; never a guessed credential. */
+    public String expectedBranchPrefix = BranchInfo.NDEF_PREFIX_UNSET;
     public String branchCity = BranchInfo.CITY;
     public String centreCode = BranchInfo.AIATS_CENTRE_CODE;
     public boolean aakashNdefDetected;
@@ -421,7 +422,7 @@ public class CardProfile {
             p.ndefWritable = o.optBoolean("ndefWritable");
             p.aakashId = o.optString("aakashId");
             p.psidGuess = o.optString("psidGuess");
-            p.expectedBranchPrefix = o.optString("expectedBranchPrefix", BranchInfo.EXPECTED_NDEF_PREFIX);
+            p.expectedBranchPrefix = o.optString("expectedBranchPrefix", BranchInfo.NDEF_PREFIX_UNSET);
             p.branchCity = o.optString("branchCity", BranchInfo.CITY);
             p.centreCode = o.optString("centreCode", BranchInfo.AIATS_CENTRE_CODE);
             p.aakashNdefDetected = o.optBoolean("aakashNdefDetected");
@@ -443,6 +444,11 @@ public class CardProfile {
             p.nfcCounterHex = o.optString("nfcCounterHex");
             p.isoDepMaxTransceive = o.optInt("isoDepMaxTransceive");
             p.mode = o.optString("mode", MODE_UNSUPPORTED);
+            // Older profiles stored a guessed "AAKASH" prefix. MIFARE Classic cards
+            // have no NDEF text, so clear it on load.
+            if (MODE_MIFARE_CLASSIC.equals(p.mode)) {
+                p.expectedBranchPrefix = BranchInfo.NDEF_PREFIX_UNSET;
+            }
             p.registeredAt = o.optLong("registeredAt", System.currentTimeMillis());
             p.updatedAt = o.optLong("updatedAt", p.registeredAt);
 

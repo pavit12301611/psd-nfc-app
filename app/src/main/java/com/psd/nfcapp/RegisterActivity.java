@@ -39,6 +39,7 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
     private EditText inputName;
     private EditText inputStudentId;
     private EditText inputBranchPrefix;
+    private View branchPrefixBlock;
     private EditText inputAids;
     private Button btnSave;
     private Button btnRescan;
@@ -57,6 +58,7 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         inputName = findViewById(R.id.inputCardName);
         inputStudentId = findViewById(R.id.inputStudentId);
         inputBranchPrefix = findViewById(R.id.inputBranchPrefix);
+        branchPrefixBlock = findViewById(R.id.branchPrefixBlock);
         inputAids = findViewById(R.id.inputAids);
         btnSave = findViewById(R.id.btnSave);
         btnRescan = findViewById(R.id.btnRescan);
@@ -153,10 +155,16 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         inputName.setText(TextUtils.isEmpty(p.cardLabel) ? "My Aakash ID card" : p.cardLabel);
         String student = TextUtils.isEmpty(p.studentId) ? p.psidGuess : p.studentId;
         inputStudentId.setText(TextUtils.isEmpty(student) ? "" : student);
-        String prefix = !TextUtils.isEmpty(p.aakashId) ? p.aakashId
-                : (!TextUtils.isEmpty(p.expectedBranchPrefix) ? p.expectedBranchPrefix
-                : BranchInfo.EXPECTED_NDEF_PREFIX);
-        inputBranchPrefix.setText(prefix);
+        boolean mifareClassic = CardProfile.MODE_MIFARE_CLASSIC.equals(p.mode);
+        branchPrefixBlock.setVisibility(mifareClassic ? View.GONE : View.VISIBLE);
+        if (mifareClassic) {
+            // No NDEF text exists on this card, so no guessed AAKASH prefix is shown or saved.
+            inputBranchPrefix.setText("");
+        } else {
+            String prefix = !TextUtils.isEmpty(p.aakashId) ? p.aakashId
+                    : (!TextUtils.isEmpty(p.expectedBranchPrefix) ? p.expectedBranchPrefix : "");
+            inputBranchPrefix.setText(prefix);
+        }
         StringBuilder sb = new StringBuilder();
         for (String aid : p.aids) {
             if (sb.length() > 0) sb.append('\n');
@@ -307,26 +315,26 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         if (captured.cardLabel.isEmpty()) captured.cardLabel = "My Aakash ID card";
         captured.studentId = inputStudentId.getText().toString().trim();
         captured.expectedBranchPrefix = inputBranchPrefix.getText().toString().trim();
-        if (captured.expectedBranchPrefix.isEmpty()) {
-            captured.expectedBranchPrefix = BranchInfo.EXPECTED_NDEF_PREFIX;
-        }
         captured.branchCity = BranchInfo.CITY;
         captured.centreCode = BranchInfo.AIATS_CENTRE_CODE;
 
-        String upperPrefix = captured.expectedBranchPrefix.toUpperCase(Locale.US);
-        boolean prefixFound = false;
-        for (String t : captured.ndefTexts) {
-            if (t != null && t.toUpperCase(Locale.US).contains(upperPrefix)) {
-                prefixFound = true;
-                break;
+        if (!TextUtils.isEmpty(captured.expectedBranchPrefix)
+                && !TextUtils.isEmpty(captured.ndefHex)) {
+            String upperPrefix = captured.expectedBranchPrefix.toUpperCase(Locale.US);
+            boolean prefixFound = false;
+            for (String t : captured.ndefTexts) {
+                if (t != null && t.toUpperCase(Locale.US).contains(upperPrefix)) {
+                    prefixFound = true;
+                    break;
+                }
             }
-        }
-        if (!prefixFound && !TextUtils.isEmpty(captured.ndefHex)) {
-            captured.addNote("Warning: expected branch prefix " + captured.expectedBranchPrefix
-                    + " was not found in the card's NDEF text. The card's exact text is authoritative; "
-                    + "do not replace it with a guessed Delhi / CC-028 code.");
-            Toast.makeText(this, "Expected branch prefix not found in NDEF text; check card details",
-                    Toast.LENGTH_LONG).show();
+            if (!prefixFound) {
+                captured.addNote("Warning: NDEF text prefix " + captured.expectedBranchPrefix
+                        + " was not found in the card's captured text. The exact text is "
+                        + "authoritative; do not replace it with a guessed Delhi / CC-028 code.");
+                Toast.makeText(this, "NDEF text prefix not found in captured text; check card details",
+                        Toast.LENGTH_LONG).show();
+            }
         }
 
         captured.aids.clear();
