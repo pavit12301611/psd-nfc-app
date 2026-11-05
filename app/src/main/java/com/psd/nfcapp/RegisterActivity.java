@@ -380,7 +380,8 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
                             + "\n\n" + dumpStatus
                             + "\n\nStock Android HCE cannot present this card. Use a Gen2/CUID "
                             + "UID-changeable magic card, or an authorised external emulator such "
-                            + "as ChameleonUltra / Proxmark. The printed barcode is NOT used.")
+                            + "as ChameleonUltra / Proxmark. For this card the user confirmed NFC "
+                            + "punching; the app does not use the printed barcode as a credential.")
                     .setCancelable(false)
                     .setPositiveButton("Magic card / dump", (d, w) -> {
                         startActivity(new Intent(this, MifareMagicActivity.class));

@@ -86,10 +86,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=v3.1.0-mifare-saharanpur
+          TAG=v3.1.1-mifare-saharanpur
           APK=app/build/outputs/apk/release/app-release.apk
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" \
-            --title "Aakash Saharanpur ID v3.1 — MIFARE Classic dump + magic card" \
-            --notes "Single-purpose Aakash Saharanpur ID tool. The real card scans as MIFARE Classic 1K / Crypto1 (SAK 08, ATQA 0400, 16 sectors, 1024 bytes, no NDEF). Stock Android HCE cannot emulate MIFARE Classic or set its fixed UID. This build captures the full 16-sector dump and key map with common default keys, exports it, and writes/verifies it on a Gen2/CUID UID-changeable MIFARE Classic 1K magic card. A normal blank MIFARE card cannot change block 0; an NTAG/Type-2 sticker is the wrong protocol. Printed barcode, Roll No and User ID are not used; the user confirmed NFC punching. No guessed Delhi / CC-028 credential, no fake attendance dialog. APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
+            --title "Aakash Saharanpur ID v3.1.1 — MIFARE dump + official attendance research" \
+            --notes "Single-purpose Aakash Saharanpur ID tool. Real card: MIFARE Classic 1K / Crypto1, SAK 08, ATQA 0400, 16 sectors / 1024 bytes, no NDEF. v3.1.1 keeps the full 16-sector dump + key map and Gen2/CUID magic-card writer, and adds official-source research: Aakash attendance monitoring can ingest Barcode / RFID / biometric machines, but no public source names the Saharanpur reader. For this card the user confirmed NFC punching, so the printed barcode is not used as a credential and no camera scanner path is built. Cosmetic fixes: exact 1K label from getSize(), truthful no-NDEF/PSID/branch-identifier note, and explicit all-default-keys note. Stock Android HCE remains diagnostics only; MIFARE_VERIFY_OK is not an attendance punch. No guessed Delhi / CC-028 credential, no fake success dialog. APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
           gh release upload "$TAG" "$APK" --clobber
           gh release view "$TAG" --json assets --jq '.assets[].browser_download_url'

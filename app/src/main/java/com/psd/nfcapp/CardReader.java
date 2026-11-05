@@ -148,7 +148,7 @@ public final class CardReader {
         if (mc == null) return;
         try {
             mc.connect();
-            p.mifareType = classicType(mc.getType());
+            p.mifareType = classicType(mc.getType(), mc.getSize());
             p.mifareSectorCount = mc.getSectorCount();
             p.mifareBlockCount = mc.getBlockCount();
             p.mifareSize = mc.getSize();
@@ -202,6 +202,10 @@ public final class CardReader {
                 p.addNote("Full MIFARE dump captured: " + readable + "/" + p.mifareSectorCount
                         + " sectors, " + dump.length + " bytes, " + p.mifareSectorKeys.size()
                         + " key entries");
+                if (allKeysDefault(p.mifareSectorKeys)) {
+                    p.addNote("All sectors authenticated with factory default key FFFFFFFFFFFF; "
+                            + "no nested / hardnested key recovery is required for this dump.");
+                }
             } else {
                 p.addNote("Partial MIFARE dump: " + readable + "/" + p.mifareSectorCount
                         + " sectors. Recover remaining keys with MIFARE Classic Tool / Proxmark.");
@@ -510,13 +514,37 @@ public final class CardReader {
         }
     }
 
+    private static boolean allKeysDefault(List<String> keyMap) {
+        if (keyMap == null || keyMap.isEmpty()) return false;
+        String defaultKey = NfcUtils.bytesToHex(MifareClassic.KEY_DEFAULT);
+        for (String entry : keyMap) {
+            String[] parts = entry == null ? new String[0] : entry.split(":");
+            if (parts.length < 3 || !defaultKey.equalsIgnoreCase(parts[2])) return false;
+        }
+        return true;
+    }
+
     private static void addFinalNotes(CardProfile p) {
         p.addNote("Android HCE always presents a random UID and fixed ATS; the physical card's "
                 + "UID / ATQA / SAK / ATS cannot be reproduced.");
         p.addNote(BranchInfo.centreSummary());
-        p.addNote("The exact AAKASH branch identifier must be read from this card. Public "
-                + BranchInfo.AIATS_CENTRE_CODE + " is an AIATS exam-centre code, not a confirmed "
-                + "NFC branch ID; do not hard-code a guessed identifier.");
+        p.addNote("Official Aakash 'Why Aakash' pages say daily attendance can be pulled from "
+                + "Barcode / RFID / biometric machines. That is an institution-level capability, "
+                + "not proof of the Saharanpur reader or of this card's active protocol.");
+        boolean ndefCredentialFound = p.aakashNdefDetected
+                || !TextUtils.isEmpty(p.aakashId)
+                || !TextUtils.isEmpty(p.psidGuess)
+                || !p.ndefTexts.isEmpty();
+        if (ndefCredentialFound) {
+            p.addNote("The exact AAKASH branch identifier must be read from this card. Public "
+                    + BranchInfo.AIATS_CENTRE_CODE + " is an AIATS exam-centre code, not a confirmed "
+                    + "NFC branch ID; do not hard-code a guessed identifier.");
+        } else {
+            p.addNote("No NDEF text / AAKASH / 11-digit PSID credential was found on this card. "
+                    + "Public " + BranchInfo.AIATS_CENTRE_CODE + " is only an AIATS exam-centre "
+                    + "code; there is no branch identifier in the dump to hard-code. Do not "
+                    + "invent one from the printed barcode, roll number or user ID.");
+        }
         if (CardProfile.MODE_MIFARE_CLASSIC.equals(p.mode)) {
             p.addNote("MIFARE Classic / Crypto1 detected. A normal blank MIFARE Classic card has "
                     + "a read-only block 0 UID; a Gen2/CUID UID-changeable magic card or an "
@@ -576,11 +604,15 @@ public final class CardReader {
         return false;
     }
 
-    private static String classicType(int type) {
-        if (type == MifareClassic.TYPE_CLASSIC) return "MIFARE Classic 1K/4K";
-        if (type == MifareClassic.TYPE_PLUS) return "MIFARE Plus";
-        if (type == MifareClassic.TYPE_PRO) return "MIFARE Pro";
-        return "unknown";
+    private static String classicType(int type, int size) {
+        String family = "MIFARE Classic";
+        if (type == MifareClassic.TYPE_PLUS) family = "MIFARE Plus";
+        if (type == MifareClassic.TYPE_PRO) family = "MIFARE Pro";
+        if (size == MifareClassic.SIZE_1K) return family + " 1K";
+        if (size == MifareClassic.SIZE_4K) return family + " 4K";
+        if (size == MifareClassic.SIZE_2K) return family + " 2K";
+        if (size == MifareClassic.SIZE_MINI) return family + " Mini";
+        return family + " 1K/4K";
     }
 
     private static String ultralightType(int type) {

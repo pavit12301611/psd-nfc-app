@@ -237,16 +237,19 @@ public class MainActivity extends Activity {
 
     private void showFirstRunHelp() {
         android.content.SharedPreferences ui = getSharedPreferences("aakash_ui", MODE_PRIVATE);
-        if (ui.getBoolean("seen_help_v4", false)) return;
-        ui.edit().putBoolean("seen_help_v4", true).apply();
+        if (ui.getBoolean("seen_help_v5", false)) return;
+        ui.edit().putBoolean("seen_help_v5", true).apply();
         new AlertDialog.Builder(this)
                 .setTitle("Saharanpur Aakash ID card — MIFARE Classic")
                 .setMessage("1. Register YOUR OWN Aakash ID card once. Your actual card scans as "
                         + "MIFARE Classic 1K (Crypto1), SAK 08, ATQA 0400, 16 sectors / 1024 bytes, "
                         + "with no NDEF text.\n\n"
-                        + "2. The printed barcode / Roll No / User ID / Branch Term are visual/admin "
-                        + "identifiers. You confirmed the reader uses NFC, so the app does NOT use "
-                        + "the barcode as a credential.\n\n"
+                        + "2. Official Aakash 'Why Aakash' pages say daily attendance can be pulled "
+                        + "from Barcode / RFID / biometric machines, so the institute supports "
+                        + "multiple capture types. Your card has a printed barcode too, but you "
+                        + "confirmed it punches over NFC; for THIS card the barcode / Roll No / "
+                        + "User ID / Branch Term are visual/admin or alternate identifiers, and the "
+                        + "app does NOT use the printed barcode as a credential.\n\n"
                         + "3. Stock Android HCE CANNOT emulate MIFARE Classic: it cannot set the fixed "
                         + "UID, ATQA/SAK or perform Crypto1 sector authentication. The app captures "
                         + "the full sector dump and key map with common default keys.\n\n"
@@ -254,9 +257,10 @@ public class MainActivity extends Activity {
                         + "card (block 0 writable), or an authorised external emulator. Use "
                         + "WRITE / EXPORT MIFARE MAGIC CARD DUMP. A normal blank MIFARE card cannot "
                         + "change its UID; an NTAG sticker is the wrong protocol.\n\n"
-                        + "5. Public Aakash sources list the Court Road, Saharanpur centre; CC-028 "
-                        + "is an AIATS exam-centre code, NOT a confirmed NFC branch ID. No guessed "
-                        + "credential is hardcoded.\n\n"
+                        + "5. Public Aakash sources list the Court Road, Saharanpur centre and "
+                        + "CC-028 as an AIATS exam-centre code, NOT a confirmed NFC branch ID. "
+                        + "No public source names this branch's reader model or protocol; no "
+                        + "guessed credential is hardcoded.\n\n"
                         + "6. This app does not record attendance. MIFARE_VERIFY_OK is not proof the "
                         + "institute reader accepted the punch. Use only for your own card, with "
                         + "institute permission.")

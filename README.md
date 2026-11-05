@@ -1,4 +1,4 @@
-# Aakash Saharanpur ID — v3.1 (MIFARE Classic)
+# Aakash Saharanpur ID — v3.1.1 (MIFARE Classic)
 
 A single-purpose Android app for **your own Aakash Institute, Saharanpur ID card** and the institute's NFC attendance reader. It is not a link/photo/phone-to-phone sharing app, it does not use Android Beam, and it never shows a fake "Attendance Punched" dialog. Only the institute's reader can record attendance.
 
@@ -19,7 +19,7 @@ The original app was an NDEF **link transmitter** for two Android phones. It inv
 - Sector 0 was readable with the common default key `FFFFFFFFFFFF`.
 - Earlier v3.0 incorrectly assumed Type 2 / NTAG and showed a false `"Ultralight: NFC-A Type 2 (NfcA only)"` line because `NfcA` was present. v3.1 fixes that: `NfcA` alone is not Type 2, and MIFARE Classic takes priority.
 
-The user confirmed the **printed barcode is NOT used** for attendance; the card punches over NFC, including from the other side. The card photos show a printed barcode, Roll No, User ID and Branch Term, plus the instruction "Entry in the classroom is strictly by ID Card". Those are visual/admin identifiers, not an NFC payload. Aakash's own admission/terms documents also say entry to classes is only with the ID card [1](https://www.aakash.ac.in/sites/default/files/medical_acst_admission-form.pdf) [5](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/target_solutions/Updatd_Terms_and_Conditions_03_07_2023.pdf). Public reports conflict — one mentions barcode attendance cards [2](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students), another says ID-card scans trigger parent SMS [3](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash) — but for **this** card the NFC path is the one to support.
+The user confirmed this card punches over **NFC**, including from the other side, so the printed barcode is **not the active credential for this card**. The card photos show a printed barcode, Roll No, User ID and Branch Term, plus the instruction "Entry in the classroom is strictly by ID Card"; those are visual/admin or alternate identifiers, not an NFC payload. Aakash's own admission/terms documents say entry to classes is only with the ID card [1](https://www.aakash.ac.in/sites/default/files/medical_acst_admission-form.pdf) [5](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/target_solutions/Updatd_Terms_and_Conditions_03_07_2023.pdf), without naming the reader technology. A deeper official-source check now shows the institute's attendance platform can ingest **Barcode, RFID and biometric machines** (§2.1), so "Aakash never uses barcode" would also be wrong. Public reports are branch/era dependent — one answers about **Allen** barcode attendance cards [2](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students), another says Aakash ID-card scans trigger parent SMS and explicitly caveats "might not be true for all the branches" [3](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash). For **your** Saharanpur card, the confirmed active path is the embedded MIFARE Classic NFC chip.
 
 ### The hard protocol limit
 
@@ -39,9 +39,26 @@ So **no ordinary HCE code change can make the phone become this card**. The work
 - Aakash's official myAakash guide describes **PSID as an 11-digit centre-issued ID**. That is a login/student identifier, not proof of an NFC payload. [myAakash login guide](https://www.aakash.ac.in/how-to-login-download-myaakash-app).
 - No public source confirms the exact Saharanpur reader model, UID allowlist, Crypto1 sector usage, key diversification or backend API. `AAKASH-DELHI-001`, `CC-028`, `KIND_PUNCH`, printed Roll No / User ID / barcode number and `startsWith("AAKASH")` are **not** used as credential data.
 
+### 2.1 Deep search: what Aakash actually uses (2026-11-05)
+
+**Short answer:** Aakash does **not** publish "one protocol for all centres". Its official attendance monitoring pages say the platform can **pull attendance from Barcode / RFID / biometric machines** [26](https://www.aakash.ac.in/why-aakash) [27](https://dlp.aakash.ac.in/dlp-why-aakash). That is an institution-level capability list, **not** proof that the Saharanpur Court Road centre uses barcode today, and not proof that every branch uses the same reader.
+
+| Official / public source | What it actually says | What it does **not** prove |
+|---|---|---|
+| Official **Why Aakash** and **DLP Why Aakash** pages [26](https://www.aakash.ac.in/why-aakash) [27](https://dlp.aakash.ac.in/dlp-why-aakash) | "Daily Attendance Monitoring": track daily / lecture-wise attendance, alert absentees, and **pull attendance from Barcode / RFID / biometric machines**. | Which machine is installed at Saharanpur, or that this card's printed barcode is enrolled. |
+| Official **Benefits for Students** page [28](https://www.aakash.ac.in/benefits-aakash-students) and 2025 prospectus [30](https://d28cs5wqm3s0uy.cloudfront.net/AAKASH_V2/BrochureSection/pdf/Aakash_Medical_Engineering_Foundation_Prospectus_English_2025_Updated_2_1_1_1766082328507.pdf) | "Attendance Alert through App notifications"; prospectus describes notifying parents through app / SMS / email channels. | That the app **marks** attendance. It reports attendance captured elsewhere. |
+| Official **myAakash** app listing [29](https://play.google.com/store/apps/details?id=com.aakash.myaakashapp) | Tracks missed lectures / upcoming classes; QR-code scanning is for **Foundation Study Module videos**, not for punching in. | That QR / barcode scanning in the app is an attendance credential. |
+| Official admission form [20](https://www.aakash.ac.in/sites/default/files/medical_acst_admission-form.pdf) and terms [21](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/target_solutions/Updatd_Terms_and_Conditions_03_07_2023.pdf) | "Entry in the classes / Institute will be only with Identity Card." | Whether the ID card is read as barcode, MIFARE Classic UID, sector data, biometric, or a mix. |
+| Official Saharanpur centre pages [16](https://centers.aakash.ac.in/aakash-institute-court-road-coaching-center-court-road-saharanpur-99263/Home) [17](https://www.aakash.ac.in/saharanpur-city) and AIATS centre PDF [18](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/sm_sa/AIATS%20Center.pdf) | Court Road address; `CC-028` is an **AIATS exam-centre code**. | Any NFC/barcode reader model or card protocol. `CC-028` is not an NFC branch ID. |
+| Quora reports [22](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students) [23](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash) | One answer describes **Allen** barcode attendance cards; another says Aakash ID-card scans trigger parent SMS but adds "might not be true for all the branches". | Official confirmation, current date, or Saharanpur-specific hardware. These are unverified and clearly branch / era dependent. |
+
+**Reconciling that with your card:** the card has **both** a printed 1D barcode **and** an embedded MIFARE Classic 1K chip. You explicitly tested NFC punching from either side, and the v3.1 app captured a complete 16-sector MIFARE Classic dump with no NDEF text / AAKASH string / 11-digit PSID. So for **this card at your reader**, the active credential path is **RFID / NFC (MIFARE Classic)**, not the printed barcode. The printed barcode may be a legacy number, an admin/visual identifier, or an alternate path used by centres with barcode machines. Aakash supporting barcode machines somewhere in its network does **not** override your own NFC test.
+
+**Therefore:** do **not** build a camera barcode scanner path for this card, and do **not** hardcode the printed barcode / Roll No / User ID / Branch Term as credentials. Keep the full MIFARE Classic dump + Gen2/CUID magic-card path. For 100% confirmation, ask the centre office for the reader model, or observe the reader: a barcode scanner normally has a red laser / CCD window and you show the printed side; an RFID reader is a flat pad you tap. Hybrid readers can support both, but your test still proves NFC works here.
+
 ---
 
-## 3. What v3.1 changes
+## 3. What v3.1.1 adds over v3.1
 
 1. **Correct MIFARE Classic classification.**
    - `MifareClassic` tech wins over `NfcA`; Type 2 / NTAG diagnostics are skipped for this card.
@@ -58,9 +75,12 @@ So **no ordinary HCE code change can make the phone become this card**. The work
    - Re-tap verification compares the **new UID** and all data/access bytes; Key A is masked on read, so trailer key bytes are not falsely compared.
    - `COPY FULL DUMP + KEY MAP` and `SHARE DUMP TEXT` export a MCT/Proxmark-friendly text report.
 4. **HCE is diagnostics only.** The app does not auto-arm HCE for MIFARE Classic. The Quick Settings tile, status line and logs say `HCE DIAGNOSTICS`, not "punch". A MIFARE Classic reader will never reach `HostApduService`, so an empty APDU log is expected.
-5. **Barcode ignored by design.** The printed barcode / Roll No / User ID / Branch Term are not hardcoded and no barcode scanner path is built. The user confirmed NFC punching.
+5. **Printed barcode is not this card's credential.** The printed barcode / Roll No / User ID / Branch Term are not hardcoded and no camera barcode scanner path is built. Official Aakash pages show the institute can ingest barcode **or** RFID **or** biometric machines (§2.1), but your own NFC punch test makes the embedded MIFARE Classic chip the active path here.
 6. **No guessed branch credential.** Saharanpur address/phone and `CC-028` appear only as context. The exact credential comes from the physical card's UID, block 0 and sector data.
 7. **Unit tests.** JUnit tests cover NDEF parsing, APDU wildcard rules, hex/status words and MIFARE block-0 BCC validation.
+8. **Deep official-source research (§2.1).** README and first-run help now state that Aakash supports multiple attendance capture types, while no public source names the Saharanpur reader model. The app notes that this is institution-level capability, not proof of your branch's protocol.
+9. **Screenshot label cleanups.** `MIFARE: MIFARE Classic 1K` now uses `MifareClassic.getSize()` instead of the misleading generic `MIFARE Classic 1K/4K`; the old "exact AAKASH branch identifier must be read from this card" note is replaced with a truthful "no NDEF / PSID / branch identifier in this dump" note; a full dump with all `FFFFFFFFFFFF` keys now says so explicitly.
+10. **Nuanced dialogs.** First-run help and the registration dialog mention institute-wide Barcode/RFID/biometric support but keep your card's NFC-confirmed path. `MIFARE_VERIFY_OK` still means dump match only, **not** an attendance punch.
 
 The single card profile is encrypted locally with AES-256-GCM using an Android Keystore key. Nothing is uploaded. The older Type-2/NTAG sticker writer is retained for cards that really are Type 2, but is hidden for this MIFARE Classic card.
 
@@ -68,7 +88,7 @@ The single card profile is encrypted locally with AES-256-GCM using an Android K
 
 ## 4. Install / use
 
-APK: [release `v3.1.0-mifare-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.1.0-mifare-saharanpur/app-release.apk)
+APK: [release `v3.1.1-mifare-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.1.1-mifare-saharanpur/app-release.apk)
 
 1. Open **Aakash Saharanpur ID** → **REGISTER / REPLACE CARD** → hold the physical Aakash ID card to the back of the phone.
 2. Review: `MIFARE Classic 1K / Crypto1`, 16/16 sectors dump, key entries, block 0, SAK/ATQA.
@@ -115,7 +135,7 @@ Pushing to `arena/87e17c3d-psd-nfc-app` runs `.github/workflows/build-apk.yml`:
 - JDK 17 + Android SDK 34 + Gradle 8.7,
 - `./gradlew --no-daemon --stacktrace test assembleRelease`,
 - signed APK uploaded as artifact `aakash-mifare-saharanpur-apk`,
-- attached to release `v3.1.0-mifare-saharanpur`.
+- attached to release `v3.1.1-mifare-saharanpur`.
 
 Local:
 
@@ -155,3 +175,8 @@ Local:
 23. [Public report: ID-card scan / parent SMS](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash)
 24. [Android Ndef API / Type 1-4](https://docs.kony.com/NativeAPIs/Android/android.nfc.tech-Android-10.0/source/Ndef.html)
 25. [NFC Forum tag specifications](https://nfc-forum.org/build/specifications)
+26. [Official Aakash "Why Aakash": Daily Attendance Monitoring / Barcode / RFID / biometric machines](https://www.aakash.ac.in/why-aakash)
+27. [Official DLP "Why Aakash": Daily Attendance Monitoring / Bar Code / RFID / biometric machines](https://dlp.aakash.ac.in/dlp-why-aakash)
+28. [Official Aakash benefits: Attendance Alert through App notifications](https://www.aakash.ac.in/benefits-aakash-students)
+29. [Official myAakash Google Play listing: attendance tracking + QR codes for study-module videos](https://play.google.com/store/apps/details?id=com.aakash.myaakashapp)
+30. [Official Aakash 2025 prospectus: attendance alerts / phygital QR study material](https://d28cs5wqm3s0uy.cloudfront.net/AAKASH_V2/BrochureSection/pdf/Aakash_Medical_Engineering_Foundation_Prospectus_English_2025_Updated_2_1_1_1766082328507.pdf)

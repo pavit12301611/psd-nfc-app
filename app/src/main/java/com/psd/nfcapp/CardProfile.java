@@ -188,7 +188,8 @@ public class CardProfile {
         if (MODE_NDEF.equals(mode)) return "Type 4 / NDEF";
         if (MODE_APDU.equals(mode)) return "ISO-DEP / APDU";
         if (MODE_MIFARE_CLASSIC.equals(mode)) {
-            return "MIFARE Classic 1K / Crypto1" + (mifareDumpComplete ? " (full dump)" : "");
+            String type = mifareType == null || mifareType.isEmpty() ? "MIFARE Classic" : mifareType;
+            return type + " / Crypto1" + (mifareDumpComplete ? " (full dump)" : "");
         }
         if (MODE_MIFARE_ULTRALIGHT.equals(mode)) return "MIFARE Ultralight";
         if (MODE_UID_ONLY.equals(mode)) return "UID / ISO 14443-3 only";
@@ -237,7 +238,10 @@ public class CardProfile {
                     + "emulator (ChameleonUltra / Proxmark / Flipper). A normal blank MIFARE Classic "
                     + "card has a read-only block 0, and an NTAG/Type-2 sticker is the wrong protocol. "
                     + "A reader may check only the UID, or authenticate sector data; both require the "
-                    + "original UID/keys. HCE here is diagnostics only.";
+                    + "original UID/keys. HCE here is diagnostics only. Official Aakash pages say "
+                    + "attendance can be pulled from Barcode / RFID / biometric machines, but no "
+                    + "public source names this branch's reader; for your card NFC punching was "
+                    + "confirmed, so the printed barcode is not used as a credential by this app.";
         }
         if (MODE_MIFARE_ULTRALIGHT.equals(mode)) {
             return "NOT EMULATABLE on stock Android: MIFARE Ultralight / Type 2 is a low-level "
