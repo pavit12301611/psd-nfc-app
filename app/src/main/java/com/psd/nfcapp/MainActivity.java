@@ -110,7 +110,18 @@ public class MainActivity extends Activity {
                 } else {
                     String desc = NfcUtils.describe(msg);
                     if (!desc.isEmpty()) {
-                        Toast.makeText(this, "Received via NFC: " + desc, Toast.LENGTH_LONG).show();
+                        // Check if it's an Aakash branch punch payload
+                        if (desc.startsWith("Aakash Branch Punch:")) {
+                            NfcItem punch = new NfcItem();
+                            punch.kind = NfcItem.KIND_PUNCH;
+                            punch.payload = desc.substring(20).trim();
+                            punch.createdAt = System.currentTimeMillis();
+                            store.save(punch);
+                            reload();
+                            showPunchDialog(punch);
+                        } else {
+                            Toast.makeText(this, "Received via NFC: " + desc, Toast.LENGTH_LONG).show();
+                        }
                     }
                 }
             }
@@ -141,9 +152,33 @@ public class MainActivity extends Activity {
                 if (content != null && content.startsWith("http")) {
                     showReceivedLinkDialog(content);
                 } else if (content != null && !content.isEmpty()) {
-                    Toast.makeText(this, "Received via NFC: " + content, Toast.LENGTH_LONG).show();
+                    // Aakash branch punch detection from tag content
+                    if (content.contains("AAKASH_BRANCH_PUNCH")) {
+                        NfcItem punch = new NfcItem();
+                        punch.kind = NfcItem.KIND_PUNCH;
+                        punch.payload = "Aakash Branch Punch: " + content;
+                        punch.tagIdHex = idHex;
+                        punch.createdAt = System.currentTimeMillis();
+                        store.save(punch);
+                        reload();
+                        showPunchDialog(punch);
+                    } else {
+                        Toast.makeText(this, "Received via NFC: " + content, Toast.LENGTH_LONG).show();
+                    }
                 } else {
-                    Toast.makeText(this, "NFC tag detected — ID " + idHex, Toast.LENGTH_LONG).show();
+                    // Aakash branch punch optimization: check if tag matches Aakash branch pattern
+                    if (idHex != null && idHex.startsWith("AAKASH")) {
+                        NfcItem punch = new NfcItem();
+                        punch.kind = NfcItem.KIND_PUNCH;
+                        punch.payload = "Aakash Branch Punch: Tag " + idHex;
+                        punch.tagIdHex = idHex;
+                        punch.createdAt = System.currentTimeMillis();
+                        store.save(punch);
+                        reload();
+                        showPunchDialog(punch);
+                    } else {
+                        Toast.makeText(this, "NFC tag detected — ID " + idHex, Toast.LENGTH_LONG).show();
+                    }
                 }
             }
         }
@@ -172,9 +207,25 @@ public class MainActivity extends Activity {
         String armedId = HceService.getArmedId();
         NfcItem armedItem = armedId == null ? null : store.get(armedId);
         if (armedItem != null) {
+            // Special banner for Aakash branch punch
+            if (NfcItem.KIND_PUNCH.equals(armedItem.kind)) {
+                banner.setText("● AAKASH BRANCH PUNCH ARMED: " + shortText(armedItem));
+                banner.setBackgroundColor(0xFF4CAF50); // Green for attendance
+            } else {
+                banner.setText("● ARMED & TRANSMITTING: " + shortText(armedItem));
+                banner.setBackgroundColor(0xFF000000); // Default black
+            }
+            banner.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
             banner.setVisibility(View.VISIBLE);
-            banner.setText("● ARMED & TRANSMITTING: " + shortText(armedItem));
         } else {
+            banner.setText("");
+            banner.setBackgroundColor(0xFF000000);
+            banner.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0));
+            banner.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0));
             banner.setVisibility(View.GONE);
         }
     }
@@ -193,6 +244,20 @@ public class MainActivity extends Activity {
                 .show();
     }
 
+    private void showPunchDialog(NfcItem it) {
+        // Aakash branch ID card punch optimization
+        new AlertDialog.Builder(this)
+                .setTitle("✅ Attendance Punched: Aakash Branch")
+                .setMessage("Card Name: " + (it.cardName == null ? "Unknown" : it.cardName) +
+                            "\nTag ID: " + (it.tagIdHex == null ? "" : it.tagIdHex) +
+                            "\nTime: " + (it.payload == null ? "" : it.payload))
+                .setPositiveButton("View Details", (d, w) -> {
+                    showItemDialog(it);
+                })
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
     private void showFirstRunHelp() {
         android.content.SharedPreferences ui = getSharedPreferences("psd_nfc_ui", MODE_PRIVATE);
         if (ui.getBoolean("seen_help", false)) return;
@@ -202,23 +267,40 @@ public class MainActivity extends Activity {
                 .setMessage("1. Is phone pe koi tile tap karo → ARMED ho jayega (ya Quick Settings ka 'NFC Transmit' tile ON karo).\n\n"
                         + "2. Dono phones pe NFC ON + screen ON rakho (Android OS ki wajah se screen ON zaroori hai — koi app ise bypass nahi kar sakta).\n\n"
                         + "3. Dono phones ke back touch karo — antenna TOP-middle mein hota hai — aur 3 second tak hold rakho (jaldi hatane se read miss ho jata hai).\n\n"
-                        + "4. Doosre phone pe link seedha browser mein khul jayega (har phone mein browser hota hai). Agar wahan PSD NFC hai toh app khulega aur 'NFC link received' dialog dikhega.")
+                        + "4. Doosre phone pe link seedha browser mein khul jayega (har phone mein browser hota hai). Agar wahan PSD NFC hai toh app khulega aur 'NFC link received' dialog dikhega.\n\n"
+                        + "5. Aakash Branch Punch: ID card tap karo → attendance automatically punch ho jayega (payload timestamp save hoga).")
                 .setPositiveButton("Got it", null)
                 .show();
     }
 
     private void showItemDialog(NfcItem it) {
+        String[] options;
+        if (NfcItem.KIND_PUNCH.equals(it.kind)) {
+            options = new String[]{
+                    "▶  View Punch Details",
+                    "✏️  Edit Punch Info",
+                    "🏷  Edit tags",
+                    "🗑  Delete"
+            };
+        } else {
+            options = new String[]{
+                    "▶  Arm & transmit",
+                    "✏️  Edit ID card (name, photo, fields)",
+                    "🏷  Edit tags",
+                    "🗑  Delete"
+            };
+        }
         new AlertDialog.Builder(this)
                 .setTitle(shortText(it))
-                .setItems(new CharSequence[]{
-                        "▶  Arm & transmit",
-                        "✏️  Edit ID card (name, photo, fields)",
-                        "🏷  Edit tags",
-                        "🗑  Delete"
-                }, (d, which) -> {
+                .setItems(options, (d, which) -> {
                     if (which == 0) {
-                        HceService.setArmed(this, it.id);
-                        startActivity(new Intent(this, TransmitActivity.class));
+                        if (NfcItem.KIND_PUNCH.equals(it.kind)) {
+                            // Punch details view
+                            showPunchDialog(it);
+                        } else {
+                            HceService.setArmed(this, it.id);
+                            startActivity(new Intent(this, TransmitActivity.class));
+                        }
                     } else if (which == 1) {
                         Intent edit = new Intent(this, ScanActivity.class);
                         edit.putExtra(ScanActivity.EXTRA_ITEM_ID, it.id);
@@ -261,6 +343,10 @@ public class MainActivity extends Activity {
 
     private String shortText(NfcItem it) {
         String p = it.displayName();
+        // For Aakash branch punch, keep full payload for visibility
+        if (NfcItem.KIND_PUNCH.equals(it.kind)) {
+            return p.length() > 60 ? p.substring(0, 60) + "…" : p;
+        }
         return p.length() > 40 ? p.substring(0, 40) + "…" : p;
     }
 

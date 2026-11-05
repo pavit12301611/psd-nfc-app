@@ -76,6 +76,11 @@ public class NfcUtils {
                     // default fallback for scanned cards: search page showing the tag ID
                     link = "https://www.google.com/search?q=NFC-TAG-"
                             + (item.tagIdHex == null || item.tagIdHex.isEmpty() ? "unknown" : item.tagIdHex);
+                } else if (NfcItem.KIND_PUNCH.equals(item.kind)) {
+                    // Aakash branch punch: create a specific link for attendance verification
+                    link = "https://aakash-branch.psd-nfc-app/punch?id="
+                            + (item.tagIdHex == null ? "unknown" : item.tagIdHex)
+                            + "&time=" + item.createdAt;
                 }
             }
             if (!link.isEmpty()) {
@@ -106,6 +111,11 @@ public class NfcUtils {
                     String data = (item.tagIdHex == null ? "" : item.tagIdHex)
                             + "|" + (item.tech == null ? "" : item.tech);
                     recs.add(NdefRecord.createMime("application/x-psd-tagid",
+                            data.getBytes(StandardCharsets.UTF_8)));
+                } else if (NfcItem.KIND_PUNCH.equals(item.kind)) {
+                    // Aakash branch punch payload
+                    String data = "AAKASH_BRANCH_PUNCH|" + item.payload + "|" + item.tagIdHex;
+                    recs.add(NdefRecord.createMime("application/x-psd-aakash-punch",
                             data.getBytes(StandardCharsets.UTF_8)));
                 } else {
                     recs.add(NdefRecord.createTextRecord("en", item.payload == null ? "" : item.payload));

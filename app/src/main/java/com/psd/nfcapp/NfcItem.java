@@ -11,6 +11,7 @@ public class NfcItem {
     public static final String KIND_LINK = "link";
     public static final String KIND_TEXT = "text";
     public static final String KIND_SCAN = "scan";
+    public static final String KIND_PUNCH = "punch"; // Aakash branch ID card punch
 
     /** A custom label/value pair on an ID card, e.g. "Blood group" = "B+". */
     public static class Field {
@@ -27,11 +28,11 @@ public class NfcItem {
     }
 
     public String id;
-    public String kind;        // scan (ID card) | link | text (legacy)
-    public String payload;     // link / text / human-readable summary for scans
+    public String kind;        // scan (ID card) | link | text (legacy) | punch (Aakash branch)
+    public String payload;     // link / text / human-readable summary for scans / punch timestamp
     public String openLink;    // optional: link that should open on the receiving phone
-    public String rawNdefHex;  // raw NDEF message bytes (scans), may be null/empty
-    public String tagIdHex;    // physical tag UID (scans), may be null/empty
+    public String rawNdefHex;  // raw NDEF message bytes (scans/punches), may be null/empty
+    public String tagIdHex;    // physical tag UID (scans/punches), may be null/empty
     public String tech;        // tech list of scanned tag, may be null/empty
     public String cardName;    // user-given ID card name, may be null/empty
     public String photoBase64; // JPEG photo of the card holder (base64), may be null/empty
@@ -41,6 +42,10 @@ public class NfcItem {
 
     /** Name shown on the tile: the card name if set, otherwise the payload summary. */
     public String displayName() {
+        if (kind != null && KIND_PUNCH.equals(kind)) {
+            // Aakash branch punch: show branch + timestamp
+            return "Aakash Branch Punch: " + (payload == null ? "" : payload);
+        }
         if (cardName != null && !cardName.trim().isEmpty()) return cardName.trim();
         return payload == null ? "" : payload;
     }

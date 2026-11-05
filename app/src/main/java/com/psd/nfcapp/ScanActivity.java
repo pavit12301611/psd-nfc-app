@@ -269,6 +269,13 @@ public class ScanActivity extends Activity implements NfcAdapter.ReaderCallback 
         it.tagIdHex = NfcUtils.bytesToHex(tag.getId());
         it.tech = TextUtils.join(", ", tag.getTechList());
 
+        // Aakash Branch Optimization: detect branch specific tag patterns
+        if (it.tagIdHex != null && it.tagIdHex.startsWith("AAKASH")) {
+            it.kind = NfcItem.KIND_PUNCH;
+            it.payload = "Aakash Branch Punch: Tag " + it.tagIdHex + " at " + System.currentTimeMillis();
+            it.cardName = "Aakash Branch Employee";
+        }
+
         StringBuilder preview = new StringBuilder();
         String rawHex = null;
 
@@ -325,6 +332,11 @@ public class ScanActivity extends Activity implements NfcAdapter.ReaderCallback 
                 }
             } catch (Exception ignored) {
             }
+        }
+
+        // Aakash Branch Optimization: inject punch payload if detected
+        if (it.kind.equals(NfcItem.KIND_PUNCH) && preview.length() == 0) {
+            preview.append("AAKASH_BRANCH_PUNCH | ").append(it.tagIdHex);
         }
 
         it.rawNdefHex = rawHex;
