@@ -8,14 +8,16 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * One registered physical ID card. It deliberately stores what Android HCE can actually
- * emulate (AIDs + APDU responses, or exact NDEF bytes), plus diagnostics about what it
- * cannot emulate (fixed UID, MIFARE Classic sectors, low-level protocol parameters).
+ * One registered physical ID card. It stores what Android can actually reproduce:
+ * exact NDEF bytes for a real Type 2 sticker or a Type 4 HCE fallback, plus
+ * diagnostics about what it cannot reproduce (fixed UID, NTAG originality signature,
+ * NFC counter, low-level Type 2 commands).
  */
 public class CardProfile {
     public static final String SINGLE_CARD_ID = "aakash_primary_card";
 
     public static final String MODE_NDEF = "ndef";
+    public static final String MODE_TYPE2_NDEF = "type2_ndef";
     public static final String MODE_APDU = "apdu";
     public static final String MODE_MIFARE_CLASSIC = "mifare_classic";
     public static final String MODE_MIFARE_ULTRALIGHT = "mifare_ultralight";
@@ -75,7 +77,18 @@ public class CardProfile {
     public String ccHex;
     public String ndefType;
     public int ndefMaxSize;
+    public int ndefPayloadLength;
     public boolean ndefWritable;
+
+    /** Parsed text records from the exact NDEF message. */
+    public List<String> ndefTexts = new ArrayList<>();
+    public String aakashId;
+    public String psidGuess;
+    public String expectedBranchPrefix = BranchInfo.EXPECTED_NDEF_PREFIX;
+    public String branchCity = BranchInfo.CITY;
+    public String centreCode = BranchInfo.AIATS_CENTRE_CODE;
+    public boolean aakashNdefDetected;
+    public boolean type2Detected;
 
     public String mifareType;
     public int mifareSectorCount;
@@ -85,6 +98,11 @@ public class CardProfile {
 
     public String ultralightType;
     public String ultralightPagesHex;
+    public String ntagVersionHex;
+    public String type2PagesHex;
+    public String type2CcHex;
+    public String originalitySignatureHex;
+    public String nfcCounterHex;
     public int isoDepMaxTransceive;
 
     public List<String> aids = new ArrayList<>();
@@ -95,11 +113,25 @@ public class CardProfile {
     public long registeredAt = System.currentTimeMillis();
     public long updatedAt = registeredAt;
 
+    /** Android HCE can only emulate ISO-DEP / Type 4. Type 2 / NTAG is never HCE-emulatable. */
     public boolean canEmulate() {
         return MODE_NDEF.equals(mode) || MODE_APDU.equals(mode);
     }
 
+    /** A Type 4 NDEF fallback is possible only when exact NDEF bytes were captured. */
+    public boolean canHceFallback() {
+        if (ndefHex == null || ndefHex.isEmpty()) return false;
+        if (MODE_TYPE2_NDEF.equals(mode) || MODE_NDEF.equals(mode)) return true;
+        return ndefType != null && ndefType.contains("type4");
+    }
+
+    /** A real Type 2 sticker can carry the exact NDEF bytes. */
+    public boolean canWriteSticker() {
+        return MODE_TYPE2_NDEF.equals(mode) && ndefHex != null && !ndefHex.isEmpty();
+    }
+
     public String modeLabel() {
+        if (MODE_TYPE2_NDEF.equals(mode)) return "Type 2 / NTAG / NDEF";
         if (MODE_NDEF.equals(mode)) return "Type 4 / NDEF";
         if (MODE_APDU.equals(mode)) return "ISO-DEP / APDU";
         if (MODE_MIFARE_CLASSIC.equals(mode)) return "MIFARE Classic";
@@ -109,6 +141,19 @@ public class CardProfile {
     }
 
     public String compatibilityText() {
+        if (MODE_TYPE2_NDEF.equals(mode)) {
+            return "NOT EMULATABLE BY ANDROID HCE. This is an NFC Forum Type 2 / NTAG card. "
+                    + "Android can READ and WRITE it, but stock Android cannot EMULATE it: "
+                    + "a Type-2 reader sends READ / FAST_READ page commands on ISO 14443-3A, "
+                    + "while HostApduService only receives ISO-DEP / ISO 7816-4 APDUs. "
+                    + "Workable paths: (1) use the physical card; (2) write the exact NDEF "
+                    + "to a blank NTAG213/215/216 sticker attached to the phone — only if the "
+                    + "reader checks NDEF text and NOT the 7-byte UID, ECC originality signature "
+                    + "or NFC counter; (3) use an external Type-2 emulator such as ChameleonUltra; "
+                    + "(4) ask the institute to enroll a Type-4 / HCE credential. "
+                    + "The Type-4 HCE fallback in this app is for readers that also support Type 4 "
+                    + "and ignore UID; a dedicated Type-2 attendance reader will not see it.";
+        }
         if (MODE_NDEF.equals(mode)) {
             return "CONDITIONAL: the app can serve the captured NDEF bytes as a correct NFC Forum "
                     + "Type 4 tag. This works only if the attendance reader speaks Type 4/NDEF and "
@@ -136,12 +181,25 @@ public class CardProfile {
         }
         return "NOT EMULATABLE: no NFC Forum Type 4 / ISO-DEP application was detected. "
                 + "If the card is a barcode, QR code or 125 kHz proximity card, Android NFC "
-                + "(13.56 MHz) cannot read or emulate it at all.";
+                + "(13.56 MHz) cannot read or emulate it at all. NDEF on Type 1/3/5 also cannot "
+                + "be presented by Android HCE.";
+    }
+
+    public String recommendedActionText() {
+        if (MODE_TYPE2_NDEF.equals(mode)) {
+            return "Use WRITE NTAG STICKER, or the physical card. HCE fallback is only a "
+                    + "diagnostic / Type-4-reader fallback.";
+        }
+        if (canEmulate()) {
+            return "Start HCE punch mode and check the APDU log.";
+        }
+        return "Use the physical card, or ask the institute for a phone-compatible credential.";
     }
 
     public String displayName() {
         if (cardLabel != null && !cardLabel.trim().isEmpty()) return cardLabel.trim();
-        return "Aakash ID card";
+        if (aakashId != null && !aakashId.trim().isEmpty()) return aakashId.trim();
+        return "Aakash " + BranchInfo.CITY + " ID card";
     }
 
     public String aidListText() {
@@ -150,6 +208,16 @@ public class CardProfile {
         for (String aid : aids) {
             if (sb.length() > 0) sb.append(", ");
             sb.append(aid);
+        }
+        return sb.toString();
+    }
+
+    public String ndefTextListText() {
+        if (ndefTexts.isEmpty()) return "none";
+        StringBuilder sb = new StringBuilder();
+        for (String t : ndefTexts) {
+            if (sb.length() > 0) sb.append(" | ");
+            sb.append(t.length() > 60 ? t.substring(0, 60) + "…" : t);
         }
         return sb.toString();
     }
@@ -196,7 +264,15 @@ public class CardProfile {
             o.put("ccHex", str(ccHex));
             o.put("ndefType", str(ndefType));
             o.put("ndefMaxSize", ndefMaxSize);
+            o.put("ndefPayloadLength", ndefPayloadLength);
             o.put("ndefWritable", ndefWritable);
+            o.put("aakashId", str(aakashId));
+            o.put("psidGuess", str(psidGuess));
+            o.put("expectedBranchPrefix", str(expectedBranchPrefix));
+            o.put("branchCity", str(branchCity));
+            o.put("centreCode", str(centreCode));
+            o.put("aakashNdefDetected", aakashNdefDetected);
+            o.put("type2Detected", type2Detected);
             o.put("mifareType", str(mifareType));
             o.put("mifareSectorCount", mifareSectorCount);
             o.put("mifareBlockCount", mifareBlockCount);
@@ -204,10 +280,19 @@ public class CardProfile {
             o.put("mifareBlocksHex", str(mifareBlocksHex));
             o.put("ultralightType", str(ultralightType));
             o.put("ultralightPagesHex", str(ultralightPagesHex));
+            o.put("ntagVersionHex", str(ntagVersionHex));
+            o.put("type2PagesHex", str(type2PagesHex));
+            o.put("type2CcHex", str(type2CcHex));
+            o.put("originalitySignatureHex", str(originalitySignatureHex));
+            o.put("nfcCounterHex", str(nfcCounterHex));
             o.put("isoDepMaxTransceive", isoDepMaxTransceive);
             o.put("mode", str(mode));
             o.put("registeredAt", registeredAt);
             o.put("updatedAt", updatedAt);
+
+            JSONArray texts = new JSONArray();
+            for (String t : ndefTexts) texts.put(t);
+            o.put("ndefTexts", texts);
 
             JSONArray a = new JSONArray();
             for (String aid : aids) a.put(aid);
@@ -248,7 +333,15 @@ public class CardProfile {
             p.ccHex = o.optString("ccHex");
             p.ndefType = o.optString("ndefType");
             p.ndefMaxSize = o.optInt("ndefMaxSize");
+            p.ndefPayloadLength = o.optInt("ndefPayloadLength");
             p.ndefWritable = o.optBoolean("ndefWritable");
+            p.aakashId = o.optString("aakashId");
+            p.psidGuess = o.optString("psidGuess");
+            p.expectedBranchPrefix = o.optString("expectedBranchPrefix", BranchInfo.EXPECTED_NDEF_PREFIX);
+            p.branchCity = o.optString("branchCity", BranchInfo.CITY);
+            p.centreCode = o.optString("centreCode", BranchInfo.AIATS_CENTRE_CODE);
+            p.aakashNdefDetected = o.optBoolean("aakashNdefDetected");
+            p.type2Detected = o.optBoolean("type2Detected");
             p.mifareType = o.optString("mifareType");
             p.mifareSectorCount = o.optInt("mifareSectorCount");
             p.mifareBlockCount = o.optInt("mifareBlockCount");
@@ -256,11 +349,20 @@ public class CardProfile {
             p.mifareBlocksHex = o.optString("mifareBlocksHex");
             p.ultralightType = o.optString("ultralightType");
             p.ultralightPagesHex = o.optString("ultralightPagesHex");
+            p.ntagVersionHex = o.optString("ntagVersionHex");
+            p.type2PagesHex = o.optString("type2PagesHex");
+            p.type2CcHex = o.optString("type2CcHex");
+            p.originalitySignatureHex = o.optString("originalitySignatureHex");
+            p.nfcCounterHex = o.optString("nfcCounterHex");
             p.isoDepMaxTransceive = o.optInt("isoDepMaxTransceive");
             p.mode = o.optString("mode", MODE_UNSUPPORTED);
             p.registeredAt = o.optLong("registeredAt", System.currentTimeMillis());
             p.updatedAt = o.optLong("updatedAt", p.registeredAt);
 
+            JSONArray texts = o.optJSONArray("ndefTexts");
+            if (texts != null) {
+                for (int i = 0; i < texts.length(); i++) p.ndefTexts.add(texts.optString(i));
+            }
             JSONArray a = o.optJSONArray("aids");
             if (a != null) {
                 for (int i = 0; i < a.length(); i++) p.addAid(a.optString(i));

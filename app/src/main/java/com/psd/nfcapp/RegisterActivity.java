@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Register one physical Aakash ID card, or edit its AIDs / APDU rules from a reader trace. */
@@ -37,6 +38,7 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
     private TextView rulesView;
     private EditText inputName;
     private EditText inputStudentId;
+    private EditText inputBranchPrefix;
     private EditText inputAids;
     private Button btnSave;
     private Button btnRescan;
@@ -54,6 +56,7 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         rulesView = findViewById(R.id.rulesView);
         inputName = findViewById(R.id.inputCardName);
         inputStudentId = findViewById(R.id.inputStudentId);
+        inputBranchPrefix = findViewById(R.id.inputBranchPrefix);
         inputAids = findViewById(R.id.inputAids);
         btnSave = findViewById(R.id.btnSave);
         btnRescan = findViewById(R.id.btnRescan);
@@ -74,11 +77,11 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
             enableReaderMode();
         });
 
-        if (!HceRegistrar.supportsHce(this)) {
-            status.setText("This phone does not support Android Host Card Emulation (HCE). "
-                    + "The card can still be registered for diagnostics, but it cannot be emulated.");
-        } else if (nfc == null) {
+        if (nfc == null) {
             status.setText("NFC is not available on this device");
+        } else if (!HceRegistrar.supportsHce(this)) {
+            status.setText("This phone has NFC but no Android HCE. You can still register the "
+                    + "card and write a real NTAG sticker; the Type-4 HCE fallback is unavailable.");
         } else {
             status.setText("Hold your Aakash ID card against the back of the phone");
         }
@@ -105,7 +108,8 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
     protected void onResume() {
         super.onResume();
         HceRegistrar.setPreferred(this, true);
-        if (!editMode && nfc != null && HceRegistrar.supportsHce(this)) enableReaderMode();
+        // Do NOT require HCE here: registering and writing a physical Type 2 sticker only needs NFC.
+        if (!editMode && nfc != null) enableReaderMode();
     }
 
     @Override
@@ -118,12 +122,12 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
     private void enableReaderMode() {
         Bundle options = new Bundle();
         options.putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 250);
+        // SKIP_NDEF_CHECK would prevent Ndef tech enumeration; we need the exact NDEF bytes.
         nfc.enableReaderMode(this, this,
                 NfcAdapter.FLAG_READER_NFC_A
                         | NfcAdapter.FLAG_READER_NFC_B
                         | NfcAdapter.FLAG_READER_NFC_F
-                        | NfcAdapter.FLAG_READER_NFC_V
-                        | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK,
+                        | NfcAdapter.FLAG_READER_NFC_V,
                 options);
     }
 
@@ -147,7 +151,12 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
 
     private void populateInputs(CardProfile p) {
         inputName.setText(TextUtils.isEmpty(p.cardLabel) ? "My Aakash ID card" : p.cardLabel);
-        inputStudentId.setText(TextUtils.isEmpty(p.studentId) ? "" : p.studentId);
+        String student = TextUtils.isEmpty(p.studentId) ? p.psidGuess : p.studentId;
+        inputStudentId.setText(TextUtils.isEmpty(student) ? "" : student);
+        String prefix = !TextUtils.isEmpty(p.aakashId) ? p.aakashId
+                : (!TextUtils.isEmpty(p.expectedBranchPrefix) ? p.expectedBranchPrefix
+                : BranchInfo.EXPECTED_NDEF_PREFIX);
+        inputBranchPrefix.setText(prefix);
         StringBuilder sb = new StringBuilder();
         for (String aid : p.aids) {
             if (sb.length() > 0) sb.append('\n');
@@ -178,10 +187,27 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
             sb.append("ATS / historical bytes: ").append(p.historicalBytesHex).append('\n');
         }
         if (!TextUtils.isEmpty(p.ndefHex)) {
-            sb.append("NDEF bytes: ").append(p.ndefHex.length() / 2).append('\n');
+            sb.append("Exact NDEF bytes: ").append(p.ndefHex.length() / 2).append('\n');
         }
         if (!TextUtils.isEmpty(p.ndefFileHex)) {
             sb.append("Exact Type 4 file bytes: ").append(p.ndefFileHex.length() / 2).append('\n');
+        }
+        sb.append("NDEF text: ").append(p.ndefTextListText()).append('\n');
+        sb.append("Aakash identifier: ")
+                .append(TextUtils.isEmpty(p.aakashId) ? "not found" : p.aakashId).append('\n');
+        sb.append("Possible PSID: ")
+                .append(TextUtils.isEmpty(p.psidGuess) ? "not found" : p.psidGuess).append('\n');
+        if (!TextUtils.isEmpty(p.ntagVersionHex)) {
+            sb.append("NTAG GET_VERSION: ").append(p.ntagVersionHex).append('\n');
+        }
+        if (!TextUtils.isEmpty(p.type2CcHex)) {
+            sb.append("Type 2 CC: ").append(p.type2CcHex).append('\n');
+        }
+        if (!TextUtils.isEmpty(p.originalitySignatureHex)) {
+            sb.append("Originality signature: captured (32 bytes)\n");
+        }
+        if (!TextUtils.isEmpty(p.nfcCounterHex)) {
+            sb.append("NFC counter: ").append(p.nfcCounterHex).append('\n');
         }
         if (!TextUtils.isEmpty(p.mifareType)) {
             sb.append("MIFARE: ").append(p.mifareType).append(", ").append(p.mifareSize)
@@ -192,6 +218,9 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         }
         sb.append("Discovered AIDs: ").append(p.aidListText()).append('\n');
         sb.append("Captured APDU rules: ").append(rules.size()).append('\n');
+        sb.append("Saharanpur centre: ").append(BranchInfo.CENTRE_NAME).append('\n');
+        sb.append("Public AIATS code: ").append(BranchInfo.AIATS_CENTRE_CODE)
+                .append(" (exam-centre code, not confirmed NFC branch ID)\n");
         for (String note : p.notes) sb.append("• ").append(note).append('\n');
         detail.setText(sb.toString());
         compat.setText(p.compatibilityText());
@@ -269,6 +298,28 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         captured.cardLabel = inputName.getText().toString().trim();
         if (captured.cardLabel.isEmpty()) captured.cardLabel = "My Aakash ID card";
         captured.studentId = inputStudentId.getText().toString().trim();
+        captured.expectedBranchPrefix = inputBranchPrefix.getText().toString().trim();
+        if (captured.expectedBranchPrefix.isEmpty()) {
+            captured.expectedBranchPrefix = BranchInfo.EXPECTED_NDEF_PREFIX;
+        }
+        captured.branchCity = BranchInfo.CITY;
+        captured.centreCode = BranchInfo.AIATS_CENTRE_CODE;
+
+        String upperPrefix = captured.expectedBranchPrefix.toUpperCase(Locale.US);
+        boolean prefixFound = false;
+        for (String t : captured.ndefTexts) {
+            if (t != null && t.toUpperCase(Locale.US).contains(upperPrefix)) {
+                prefixFound = true;
+                break;
+            }
+        }
+        if (!prefixFound && !TextUtils.isEmpty(captured.ndefHex)) {
+            captured.addNote("Warning: expected branch prefix " + captured.expectedBranchPrefix
+                    + " was not found in the card's NDEF text. The card's exact text is authoritative; "
+                    + "do not replace it with a guessed Delhi / CC-028 code.");
+            Toast.makeText(this, "Expected branch prefix not found in NDEF text; check card details",
+                    Toast.LENGTH_LONG).show();
+        }
 
         captured.aids.clear();
         for (String line : inputAids.getText().toString().split("[\\r\\n,]+")) {
@@ -286,16 +337,47 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         }
 
         store.saveProfile(captured);
-        store.setArmed(true);
+        // A Type 2 card must NOT silently arm HCE: that would imply a Type-2 clone exists.
+        store.setArmed(captured.canEmulate());
         boolean aidOk = HceRegistrar.sync(this, captured);
         finishAfterSave(aidOk);
     }
 
     private void finishAfterSave(boolean aidOk) {
-        String suffix = aidOk
-                ? "Card registered and punch mode armed."
-                : "Card saved, but Android rejected dynamic AID registration. Check diagnostics.";
-        if (!captured.canEmulate()) {
+        boolean type2 = CardProfile.MODE_TYPE2_NDEF.equals(captured.mode);
+        String suffix;
+        if (aidOk) {
+            if (type2) {
+                suffix = "Card registered. HCE fallback is OFF; use WRITE NTAG STICKER for the real Type-2 reader.";
+            } else if (captured.canEmulate()) {
+                suffix = "Card registered and punch mode armed.";
+            } else {
+                suffix = "Card registered. Punch mode is OFF; arm manually only for diagnostics.";
+            }
+        } else {
+            suffix = "Card saved, but Android rejected dynamic AID registration. Check diagnostics.";
+        }
+
+        if (type2) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Type 2 / NTAG card registered")
+                    .setMessage(captured.compatibilityText() + "\n\n" + suffix
+                            + "\n\nThe exact NDEF text from your card was captured. Write it to a "
+                            + "blank NTAG213/215/216 sticker and verify it in the sticker writer. "
+                            + "This works only if the reader does not check UID, originality "
+                            + "signature or counter.")
+                    .setCancelable(false)
+                    .setPositiveButton("Write NTAG sticker", (d, w) -> {
+                        startActivity(new Intent(this, WriteTagActivity.class));
+                        finish();
+                    })
+                    .setNeutralButton("Diagnostics", (d, w) -> {
+                        startActivity(new Intent(this, PunchActivity.class));
+                        finish();
+                    })
+                    .setNegativeButton("Close", (d, w) -> finish())
+                    .show();
+        } else if (!captured.canEmulate()) {
             new AlertDialog.Builder(this)
                     .setTitle("Hardware limitation")
                     .setMessage(captured.compatibilityText() + "\n\n" + suffix

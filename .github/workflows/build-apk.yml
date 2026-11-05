@@ -1,4 +1,4 @@
-name: Build Aakash ID Punch APK
+name: Build Aakash Saharanpur ID APK
 
 on:
   push:
@@ -43,10 +43,10 @@ jobs:
             https://raw.githubusercontent.com/gradle/gradle/v8.7.0/gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
 
-      - name: Build signed release APK
+      - name: Run unit tests and build signed release APK
         run: |
           set -o pipefail
-          ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee /tmp/build.log
+          ./gradlew --no-daemon --stacktrace test assembleRelease 2>&1 | tee /tmp/build.log
 
       - name: Surface Gradle errors as annotations
         if: failure()
@@ -77,7 +77,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aakash-id-punch-apk
+          name: aakash-saharanpur-apk
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
@@ -86,10 +86,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=v2.0.0-aakash
+          TAG=v3.0.0-saharanpur
           APK=app/build/outputs/apk/release/app-release.apk
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" \
-            --title "Aakash ID Punch v2.0 — real HCE attendance profile" \
-            --notes "Single-card Aakash attendance HCE app. Registers the physical card's tech, AIDs and APDU/NDEF data; serves a correct Type 4 tag; logs reader APDUs. Android HCE cannot clone fixed UID / MIFARE Classic / 125 kHz / barcode cards. APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
+            --title "Aakash Saharanpur ID v3.0 — exact NDEF sticker writer" \
+            --notes "Single-purpose Aakash Saharanpur ID tool. Detects NFC Forum Type 2 / NTAG cards, reads the exact AAKASH NDEF text and NTAG diagnostics, and writes/verifies those exact bytes on a real NTAG213/215/216 sticker. Stock Android HCE cannot emulate Type 2; the Type-4/ISO-DEP path is clearly labelled as a fallback only. No guessed Delhi / CC-028 credential, no fake attendance dialog. Android HCE cannot clone fixed UID, MIFARE Classic, 125 kHz or barcode cards. APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
           gh release upload "$TAG" "$APK" --clobber
           gh release view "$TAG" --json assets --jq '.assets[].browser_download_url'

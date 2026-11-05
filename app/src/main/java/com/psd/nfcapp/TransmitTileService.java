@@ -4,7 +4,7 @@ import android.content.Intent;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
-/** Quick Settings toggle for punch mode. It never transmits links or NDEF pushes. */
+/** Quick Settings toggle for HCE punch mode / Type-4 fallback. Never transmits links or NDEF pushes. */
 public class TransmitTileService extends TileService {
     @Override
     public void onStartListening() {
@@ -34,8 +34,15 @@ public class TransmitTileService extends TileService {
         Tile t = getQsTile();
         if (t == null) return;
         boolean on = p != null && store.isArmed();
+        boolean type2 = p != null && CardProfile.MODE_TYPE2_NDEF.equals(p.mode);
         t.setState(on ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
-        t.setLabel(on ? "Aakash Punch ON" : "Aakash Punch");
+        if (p == null) {
+            t.setLabel("Aakash ID");
+        } else if (type2) {
+            t.setLabel(on ? "Type4 Fallback ON" : "Type4 Fallback");
+        } else {
+            t.setLabel(on ? "Aakash Punch ON" : "Aakash Punch");
+        }
         t.updateTile();
     }
 }

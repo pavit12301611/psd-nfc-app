@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Aakash ID Punch</string>
-    <string name="tile_label">Aakash Punch</string>
-    <string name="hce_service_desc">Aakash ID card emulation for the attendance reader</string>
+    <string name="app_name">Aakash Saharanpur ID</string>
+    <string name="tile_label">Aakash ID / HCE fallback</string>
+    <string name="hce_service_desc">Type-4/ISO-DEP fallback for the registered Aakash ID card (not a Type-2 clone)</string>
     <string name="aid_group_desc">Registered attendance / NDEF Type 4 AIDs</string>
     <string name="aid_ndef_desc">NFC Forum NDEF Type 4 application</string>
     <string name="aid_t4t_desc">NFC Forum Type 4 / DESFire ISO AID</string>

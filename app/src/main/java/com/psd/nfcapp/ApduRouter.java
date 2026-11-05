@@ -5,9 +5,12 @@ import java.util.Arrays;
 /**
  * Turns a reader's C-APDU into an R-APDU.
  *
- * Two modes:
+ * Three paths:
  *  - Type 4 / NDEF: implement the NFC Forum Type 4 Tag application. The NDEF file is
  *    NLEN (2 bytes) + the exact captured NDEF message, and the CC advertises that file.
+ *  - Type 4 fallback: even when the registered card is Type 2 / NTAG, serve its exact
+ *    NDEF bytes over Type 4/ISO-DEP. This only reaches readers that also speak Type 4;
+ *    it is NOT a Type 2 emulation.
  *  - ISO-DEP / APDU: replay captured command/response rules for registered AIDs.
  *
  * Explicit rules are checked first so a reader-specific trace can override generic handling.

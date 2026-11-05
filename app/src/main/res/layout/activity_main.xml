@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="14dp"
-            android:text="One card. Attendance reader only. No links, no phone-to-phone sharing."
+            android:text="Saharanpur Aakash ID card: exact NDEF capture, real NTAG sticker writer, and a clearly labelled Type-4 HCE fallback."
             android:textColor="#9E9E9E"
             android:textSize="13sp" />
 
@@ -51,6 +51,18 @@
             android:text="No Aakash ID card registered."
             android:textColor="#FFFFFF"
             android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/branchInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/tile_bg"
+            android:lineSpacingExtra="3dp"
+            android:padding="14dp"
+            android:text=""
+            android:textColor="#8AD8FF"
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/compatText"
@@ -109,6 +121,18 @@
             android:textStyle="bold" />
 
         <Button
+            android:id="@+id/btnWriteSticker"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_white"
+            android:text="WRITE EXACT NDEF TO NTAG STICKER"
+            android:textAllCaps="true"
+            android:textColor="#000000"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <Button
             android:id="@+id/btnDiagnostics"
             android:layout_width="match_parent"
             android:layout_height="48dp"
@@ -123,7 +147,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="LAST READER ACTIVITY"
+            android:text="LAST READER / TAG ACTIVITY"
             android:textColor="#9E9E9E"
             android:textSize="12sp"
             android:textStyle="bold" />

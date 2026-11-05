@@ -4,15 +4,17 @@ import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
 
 /**
- * The only NFC output of this app: an ISO-DEP card for the attendance reader.
- * It never pushes URLs, never writes physical tags, and never claims a punch succeeded.
- * Every reader APDU and our response is logged so failures are visible.
+ * The HCE output of this app: a narrow ISO-DEP / Type 4 card for the attendance reader.
+ * For a Type 2 / NTAG card this is only a fallback for readers that also speak Type 4;
+ * the real Type 2 credential is presented with a physical NTAG sticker or the original card.
+ * It never pushes URLs, never claims a punch succeeded, and logs every APDU.
  */
 public class HceService extends HostApduService {
     private CardStore store;
     private final ApduRouter.Session session = new ApduRouter.Session();
     private long cachedVersion = -1L;
     private CardProfile cachedProfile;
+    private boolean fallbackLogged;
 
     @Override
     public void onCreate() {
@@ -28,6 +30,14 @@ public class HceService extends HostApduService {
             cachedProfile = store.loadProfile();
             cachedVersion = version;
             session.reset();
+            fallbackLogged = false;
+        }
+        if (!fallbackLogged && cachedProfile != null
+                && CardProfile.MODE_TYPE2_NDEF.equals(cachedProfile.mode)) {
+            store.appendLog("TYPE2_FALLBACK | registered card is NFC Forum Type 2 / NTAG; "
+                    + "this service only serves Type 4/ISO-DEP. A Type-2-only reader will "
+                    + "never reach this service.");
+            fallbackLogged = true;
         }
 
         String cmd = NfcUtils.bytesToHex(apdu);

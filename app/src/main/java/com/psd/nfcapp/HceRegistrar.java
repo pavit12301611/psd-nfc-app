@@ -101,8 +101,13 @@ public final class HceRegistrar {
         boolean hce = supportsHce(ctx);
         String aids = registeredAidsText(ctx);
         boolean aidOk = store.isAidRegistrationOk();
+        CardProfile p = store.loadProfile();
+        String path = p != null && CardProfile.MODE_TYPE2_NDEF.equals(p.mode)
+                ? "Type 4 fallback only (registered card is Type 2 / NTAG)"
+                : "ISO-DEP / Type 4";
         return "NFC: " + (nfcOn ? "ON" : "OFF")
                 + "  |  HCE: " + (hce ? "supported" : "unsupported")
+                + "\nHCE path: " + path
                 + "\nAIDs: " + aids
                 + "\nAID registration: " + (aidOk ? "OK" : "FAILED — " + store.getAidRegistrationNote());
     }

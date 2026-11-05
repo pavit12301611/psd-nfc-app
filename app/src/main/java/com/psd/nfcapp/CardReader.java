@@ -19,8 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Registers a physical card: captures everything Android HCE can reproduce, and records
- * diagnostics for everything it cannot (UID, MIFARE Classic sectors, low-level parameters).
+ * Registers a physical card. For a Type 2 / NTAG Aakash card it captures the exact
+ * NDEF bytes and NTAG diagnostics, then marks the card as NOT HCE-emulatable.
  * Runs on the reader-mode callback thread, so tag I/O is allowed here.
  */
 public final class CardReader {
@@ -40,7 +40,7 @@ public final class CardReader {
         captureLowLevel(tag, p);
         captureNdef(tag, p);
         captureMifareClassic(tag, p);
-        captureUltralight(tag, p);
+        captureType2(tag, p);
         captureIsoDep(tag, p);
         determineMode(p);
         addFinalNotes(p);
@@ -92,12 +92,27 @@ public final class CardReader {
         if (ndef == null) return;
         try {
             ndef.connect();
-            NdefMessage msg = ndef.getNdefMessage();
+            NdefMessage msg = ndef.getCachedNdefMessage();
+            if (msg == null) msg = ndef.getNdefMessage();
             if (msg != null) {
                 byte[] raw = msg.toByteArray();
                 p.ndefHex = NfcUtils.bytesToHex(raw);
+                p.ndefPayloadLength = raw.length;
+                p.ndefTexts = NfcUtils.ndefTexts(raw);
+                p.aakashId = NfcUtils.findAakashIdentifier(p.ndefTexts);
+                p.psidGuess = NfcUtils.findPsid(p.ndefTexts);
+                p.aakashNdefDetected = !TextUtils.isEmpty(p.aakashId);
                 p.addNote("NDEF message captured: " + raw.length + " bytes, "
                         + msg.getRecords().length + " record(s)");
+                if (p.aakashNdefDetected) {
+                    p.addNote("Aakash branch identifier found in NDEF text: " + p.aakashId);
+                } else {
+                    p.addNote("No NDEF text starting with AAKASH was found; reader may use UID only");
+                }
+                if (!TextUtils.isEmpty(p.psidGuess)) {
+                    p.addNote("Possible " + BranchInfo.PSID_DIGITS
+                            + "-digit PSID found in NDEF text: " + p.psidGuess);
+                }
             } else {
                 p.addNote("NDEF technology present but no NDEF message was stored on the card");
             }
@@ -154,19 +169,71 @@ public final class CardReader {
         }
     }
 
-    private static void captureUltralight(Tag tag, CardProfile p) {
+    /** Best-effort NTAG21x / Type 2 diagnostics: GET_VERSION, READ_SIG, READ_CNT, page dump. */
+    private static void captureType2(Tag tag, CardProfile p) {
         MifareUltralight mu = MifareUltralight.get(tag);
-        if (mu == null) return;
+        NfcA nfcA = NfcA.get(tag);
+        if (mu == null && nfcA == null) return;
+        TagTechnology tech = mu != null ? (TagTechnology) mu : (TagTechnology) nfcA;
         try {
-            mu.connect();
-            p.ultralightType = ultralightType(mu.getType());
-            p.ultralightPagesHex = NfcUtils.bytesToHex(mu.readPages(0));
-            p.addNote("MIFARE Ultralight / Type 2 pages 0-3 captured (diagnostic only)");
+            tech.connect();
+            if (mu != null) {
+                p.ultralightType = ultralightType(mu.getType());
+            } else {
+                p.ultralightType = "NFC-A Type 2 (NfcA only)";
+            }
+
+            byte[] version = transceiveType2(mu, nfcA, new byte[]{0x60});
+            if (version != null && version.length >= 8) {
+                p.ntagVersionHex = NfcUtils.bytesToHex(Arrays.copyOf(version, 8));
+                p.addNote("NTAG GET_VERSION captured: " + p.ntagVersionHex);
+            }
+            byte[] signature = transceiveType2(mu, nfcA, new byte[]{(byte) 0x3C, 0x00});
+            if (signature != null && signature.length >= 32) {
+                p.originalitySignatureHex = NfcUtils.bytesToHex(Arrays.copyOf(signature, 32));
+                p.addNote("NTAG ECC originality signature captured (32 bytes)");
+            }
+            byte[] counter = transceiveType2(mu, nfcA, new byte[]{(byte) 0x39, 0x00});
+            if (counter != null && counter.length >= 3) {
+                p.nfcCounterHex = NfcUtils.bytesToHex(Arrays.copyOf(counter, 3));
+                p.addNote("NTAG NFC counter captured: " + p.nfcCounterHex);
+            }
+
+            int ndefLen = p.ndefHex == null ? 0 : p.ndefHex.length() / 2;
+            int pagesToRead = Math.min(64, 16 + (ndefLen + 3) / 4 + 4);
+            StringBuilder pages = new StringBuilder();
+            for (int page = 0; page < pagesToRead; page += 4) {
+                byte[] block;
+                if (mu != null) {
+                    block = mu.readPages(page);
+                } else {
+                    block = nfcA.transceive(new byte[]{0x30, (byte) page});
+                }
+                if (block == null || block.length < 4) break;
+                int take = Math.min(16, block.length);
+                pages.append(NfcUtils.bytesToHex(Arrays.copyOf(block, take)));
+                if (take < 16) break;
+            }
+            p.type2PagesHex = pages.toString();
+            if (p.type2PagesHex.length() >= 32) {
+                p.type2CcHex = p.type2PagesHex.substring(24, 32); // page 3
+            }
+            if (!TextUtils.isEmpty(p.type2PagesHex)) {
+                p.addNote("First Type 2 pages captured: " + (p.type2PagesHex.length() / 8)
+                        + " pages (diagnostic only)");
+            }
         } catch (Exception e) {
-            p.addNote("MIFARE Ultralight read: " + simpleError(e));
+            p.addNote("Type 2 diagnostics: " + simpleError(e));
         } finally {
-            closeQuietly(mu);
+            closeQuietly(tech);
         }
+    }
+
+    private static byte[] transceiveType2(MifareUltralight mu, NfcA nfcA, byte[] cmd)
+            throws IOException {
+        if (mu != null) return mu.transceive(cmd);
+        if (nfcA != null) return nfcA.transceive(cmd);
+        return null;
     }
 
     private static void captureIsoDep(Tag tag, CardProfile p) {
@@ -302,15 +369,26 @@ public final class CardReader {
         boolean ultralight = hasTech(p.techList, "MifareUltralight");
         boolean otherLowLevel = hasTech(p.techList, "NfcB")
                 || hasTech(p.techList, "NfcF") || hasTech(p.techList, "NfcV");
+        boolean type2 = ultralight
+                || Ndef.NFC_FORUM_TYPE_2.equals(p.ndefType)
+                || !TextUtils.isEmpty(p.ntagVersionHex)
+                || !TextUtils.isEmpty(p.type2PagesHex);
+        boolean type4Ndef = isoDep || Ndef.NFC_FORUM_TYPE_4.equals(p.ndefType);
 
-        if (ndef) {
+        p.type2Detected = type2;
+        if (type2 && ndef) {
+            p.mode = CardProfile.MODE_TYPE2_NDEF;
+        } else if (type2) {
+            p.mode = CardProfile.MODE_MIFARE_ULTRALIGHT;
+        } else if (ndef && type4Ndef) {
             p.mode = CardProfile.MODE_NDEF;
+        } else if (ndef) {
+            // NDEF on Type 1/3/5 or another platform: Android HCE still cannot present it.
+            p.mode = CardProfile.MODE_UNSUPPORTED;
         } else if (isoDep && !p.rules.isEmpty()) {
             p.mode = CardProfile.MODE_APDU;
         } else if (classic) {
             p.mode = CardProfile.MODE_MIFARE_CLASSIC;
-        } else if (ultralight) {
-            p.mode = CardProfile.MODE_MIFARE_ULTRALIGHT;
         } else if (otherLowLevel) {
             p.mode = CardProfile.MODE_UNSUPPORTED;
         } else {
@@ -321,9 +399,29 @@ public final class CardReader {
     private static void addFinalNotes(CardProfile p) {
         p.addNote("Android HCE always presents a random UID and fixed ATS; the physical card's "
                 + "UID / ATQA / SAK / ATS cannot be reproduced.");
-        if (hasTech(p.techList, "MifareClassic") || hasTech(p.techList, "MifareUltralight")) {
-            p.addNote("NDEF was found on a low-level tag; only a Type 4/NDEF reader can consume "
-                    + "the emulated version. A Classic/Ultralight-only reader will not.");
+        p.addNote(BranchInfo.centreSummary());
+        p.addNote("The exact AAKASH branch identifier must be read from this card. Public "
+                + BranchInfo.AIATS_CENTRE_CODE + " is an AIATS exam-centre code, not a confirmed "
+                + "NFC branch ID; do not hard-code a guessed identifier.");
+        if (CardProfile.MODE_TYPE2_NDEF.equals(p.mode)) {
+            p.addNote("NFC Forum Type 2 / NTAG detected. Android can READ/WRITE this tag but "
+                    + "cannot EMULATE it with HCE. A dedicated Type-2 reader will not reach "
+                    + "HostApduService.");
+            if (!TextUtils.isEmpty(p.originalitySignatureHex)) {
+                p.addNote("A standard blank NTAG sticker has a different 7-byte UID and a "
+                        + "different NXP ECC originality signature. If the reader validates "
+                        + "either, the sticker will be rejected.");
+            }
+            if (!TextUtils.isEmpty(p.nfcCounterHex)) {
+                p.addNote("The NTAG NFC read counter is chip-specific. If the reader validates "
+                        + "the counter, a normal sticker cannot match it.");
+            }
+            p.addNote("Recommended: write the exact NDEF to a real NTAG213/215/216 sticker, "
+                    + "or use an external Type-2 emulator, only where the institute permits it.");
+        } else if (CardProfile.MODE_UNSUPPORTED.equals(p.mode)
+                && !TextUtils.isEmpty(p.ndefHex)) {
+            p.addNote("NDEF was found on a non-Type-4 platform. Android's Ndef API can read it, "
+                    + "but HCE cannot present that tag platform to a reader.");
         }
         if (CardProfile.MODE_APDU.equals(p.mode)) {
             p.addNote("Captured APDU responses are static. Readers using random challenges, "

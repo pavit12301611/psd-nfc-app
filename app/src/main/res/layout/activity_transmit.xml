@@ -67,7 +67,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="READER APDU LOG (NEWEST FIRST)"
+            android:text="READER / TAG LOG (NEWEST FIRST)"
             android:textColor="#9E9E9E"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -91,7 +91,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:lineSpacingExtra="3dp"
-            android:text="Empty log after a tap = the reader never opened an HCE/ISO-DEP session. APDUs with 6A82 / 6D00 = the app was reached but the AID or command was wrong. Copy the diagnostics before changing rules."
+            android:text="Empty log after a tap = the reader never opened an HCE/ISO-DEP session; a Type-2 reader will always look empty here. APDUs with 6A82 / 6D00 = the app was reached but the AID or command was wrong. TAG_WRITE / TAG_VERIFY lines come from the sticker writer."
             android:textColor="#777777"
             android:textSize="11sp" />
 
@@ -127,6 +127,18 @@
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
             android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnWriteSticker"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_white"
+            android:text="WRITE EXACT NDEF TO NTAG STICKER"
+            android:textAllCaps="true"
+            android:textColor="#000000"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnStop"

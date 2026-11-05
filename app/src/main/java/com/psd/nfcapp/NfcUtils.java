@@ -1,10 +1,21 @@
 package com.psd.nfcapp;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/** Small, dependency-free helpers for hex, AIDs and APDU rule matching. */
+/** Small, dependency-free helpers for hex, AIDs, APDU rules and NDEF text parsing. */
 public final class NfcUtils {
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+    private static final byte[] RTD_TEXT = new byte[]{'T'};
+    private static final Pattern AAKASH_TOKEN =
+            Pattern.compile("(?i)AAKASH[-_A-Z0-9]*");
+    private static final Pattern PSID_TOKEN =
+            Pattern.compile("(?<!\\d)\\d{11}(?!\\d)");
 
     private NfcUtils() {
     }
@@ -148,6 +159,130 @@ public final class NfcUtils {
             off += p.length;
         }
         return out;
+    }
+
+    /**
+     * Minimal NDEF record parser that extracts human-readable text from:
+     *  - NFC Forum RTD Text ("T") records (UTF-8 or UTF-16BE),
+     *  - other records whose payload is printable UTF-8.
+     * It deliberately does not depend on Android classes so it is unit-testable.
+     */
+    public static List<String> ndefTexts(byte[] ndef) {
+        List<String> out = new ArrayList<>();
+        if (ndef == null || ndef.length < 3) return out;
+        int off = 0;
+        while (off < ndef.length) {
+            if (off + 3 > ndef.length) break;
+            int header = ndef[off++] & 0xFF;
+            boolean shortRecord = (header & 0x10) != 0;
+            boolean idLengthPresent = (header & 0x08) != 0;
+            boolean messageEnd = (header & 0x40) != 0;
+            int tnf = header & 0x07;
+            int typeLength = ndef[off++] & 0xFF;
+
+            long payloadLength;
+            if (shortRecord) {
+                if (off + 1 > ndef.length) break;
+                payloadLength = ndef[off++] & 0xFF;
+            } else {
+                if (off + 4 > ndef.length) break;
+                payloadLength = ((long) (ndef[off] & 0xFF) << 24)
+                        | ((long) (ndef[off + 1] & 0xFF) << 16)
+                        | ((long) (ndef[off + 2] & 0xFF) << 8)
+                        | (long) (ndef[off + 3] & 0xFF);
+                off += 4;
+            }
+            int idLength = 0;
+            if (idLengthPresent) {
+                if (off + 1 > ndef.length) break;
+                idLength = ndef[off++] & 0xFF;
+            }
+            if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) break;
+            int pLen = (int) payloadLength;
+            if (off + typeLength + idLength + pLen > ndef.length) break;
+
+            byte[] type = Arrays.copyOfRange(ndef, off, off + typeLength);
+            off += typeLength;
+            off += idLength;
+            byte[] payload = Arrays.copyOfRange(ndef, off, off + pLen);
+            off += pLen;
+
+            String text = null;
+            if (tnf == 0x01 && Arrays.equals(type, RTD_TEXT)) {
+                text = decodeTextRecord(payload);
+            } else {
+                String raw = new String(payload, StandardCharsets.UTF_8);
+                if (isMostlyPrintable(raw)) text = raw;
+            }
+            if (text != null && !text.isEmpty()) out.add(text);
+            if (messageEnd) break;
+        }
+        return out;
+    }
+
+    private static String decodeTextRecord(byte[] payload) {
+        if (payload == null || payload.length < 1) return null;
+        int status = payload[0] & 0xFF;
+        int langLength = status & 0x3F;
+        int start = 1 + langLength;
+        if (start > payload.length) return null;
+        boolean utf16 = (status & 0x80) != 0;
+        return new String(payload, start, payload.length - start,
+                utf16 ? StandardCharsets.UTF_16BE : StandardCharsets.UTF_8);
+    }
+
+    private static boolean isMostlyPrintable(String s) {
+        if (s == null || s.isEmpty()) return false;
+        int ok = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\n' || c == '\r' || c == '\t' || (c >= 0x20 && c != 0x7F)) ok++;
+        }
+        return ok * 10 >= s.length() * 8 && !s.contains("\uFFFD");
+    }
+
+    public static String findAakashIdentifier(byte[] ndef) {
+        return findAakashIdentifier(ndefTexts(ndef));
+    }
+
+    public static String findAakashIdentifier(List<String> texts) {
+        if (texts == null) return "";
+        for (String raw : texts) {
+            String s = raw == null ? "" : raw.trim();
+            if (s.toUpperCase(Locale.US).startsWith("AAKASH")) return s;
+        }
+        for (String raw : texts) {
+            if (raw == null) continue;
+            Matcher m = AAKASH_TOKEN.matcher(raw);
+            if (m.find()) return m.group();
+        }
+        return "";
+    }
+
+    public static String findPsid(byte[] ndef) {
+        return findPsid(ndefTexts(ndef));
+    }
+
+    public static String findPsid(List<String> texts) {
+        if (texts == null) return "";
+        for (String raw : texts) {
+            if (raw == null) continue;
+            Matcher m = PSID_TOKEN.matcher(raw);
+            if (m.find()) return m.group();
+        }
+        return "";
+    }
+
+    public static String ndefTextSummary(byte[] ndef) {
+        List<String> texts = ndefTexts(ndef);
+        if (texts.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (String t : texts) {
+            if (sb.length() > 0) sb.append(" | ");
+            String s = t.length() > 80 ? t.substring(0, 80) + "…" : t;
+            sb.append(s.replace('\n', ' ').replace('\r', ' '));
+        }
+        return sb.toString();
     }
 
     public static String statusWordName(byte[] response) {
