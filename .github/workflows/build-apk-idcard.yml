@@ -2,7 +2,7 @@ name: Build PSD NFC ID Card APK
 
 on:
   push:
-    branches: [arena/783b9cdb-psd-nfc-app, arena/a1e98c4d-psd-nfc-app]
+    branches: [arena/783b9cdb-psd-nfc-app, arena/a1e98c4d-psd-nfc-app, arena/29ec6692-psd-nfc-app]
   workflow_dispatch:
 
 permissions:
