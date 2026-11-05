@@ -64,6 +64,15 @@ public class NfcUtilsTest {
     }
 
     @Test
+    public void validatesMifareBlockZeroBcc() {
+        assertTrue(NfcUtils.isValidMifareBlock0(
+                "11223344440804006263646566676869", 4));
+        assertFalse(NfcUtils.isValidMifareBlock0(
+                "11223344550804006263646566676869", 4)); // wrong BCC
+        assertFalse(NfcUtils.isValidMifareBlock0("1122", 4)); // too short
+    }
+
+    @Test
     public void statusWords() {
         assertEquals("OK", NfcUtils.statusWordName(NfcUtils.hexToBytes("9000")));
         assertEquals("file/app not found", NfcUtils.statusWordName(NfcUtils.hexToBytes("6A82")));

@@ -1,8 +1,8 @@
-# Aakash Saharanpur ID — v3.0
+# Aakash Saharanpur ID — v3.1 (MIFARE Classic)
 
 A single-purpose Android app for **your own Aakash Institute, Saharanpur ID card** and the institute's NFC attendance reader. It is not a link/photo/phone-to-phone sharing app, it does not use Android Beam, and it never shows a fake "Attendance Punched" dialog. Only the institute's reader can record attendance.
 
-> Use it only for your own card and only where the institute permits a phone/sticker credential. No real attendance punch has been tested with the Aakash reader by this project.
+> Use it only for your own card and only where the institute permits a phone/sticker/magic-card credential. No real attendance punch has been tested with the Aakash reader by this project.
 
 ---
 
@@ -10,94 +10,101 @@ A single-purpose Android app for **your own Aakash Institute, Saharanpur ID card
 
 The original app was an NDEF **link transmitter** for two Android phones. It invented `https://aakash-branch.psd-nfc-app/punch?...` URLs, Android App Records, `AAKASH_BRANCH_PUNCH` payloads and a local success popup. An attendance reader is not an Android phone; it will not open a URL or an AAR. It also checked `uidHex.startsWith("AAKASH")`, which is impossible because a UID is hex `0-9A-F`.
 
-The supplied card profile is **13.56 MHz HF, ISO/IEC 14443 Type A, passive NFC Forum Type 2 / NTAG213-216, NDEF text starting `AAKASH`**, no battery. That changes the fix: stock Android HCE **cannot present this credential**.
+**Actual card evidence from your screenshots:**
 
-- Android HCE only emulates **ISO-DEP / ISO 7816-4 / NFC Forum Type 4**, selected by an AID. The HCE UID is **random every tap**; an app cannot set UID, ATQA, SAK or ATS. [Android HCE overview](https://developer.android.com/develop/connectivity/nfc/hce), [AOSP HCE docs](https://android.googlesource.com/platform/frameworks/base/+/c988ee6/docs/html/guide/topics/connectivity/nfc/hce.jd).
-- A Type 2 / NTAG reader uses low-level **ISO 14443-3A READ / FAST_READ page commands**, not APDUs. HCE cannot emulate Type 2, MIFARE Ultralight, MIFARE Classic, 125 kHz, barcode or QR cards. [HCE cannot emulate Type 2](https://stackoverflow.com/questions/75878348/is-it-possible-to-emulate-an-nfc-tag-with-a-url-payload-on-an-omnikey-5127ck-reader-and-have-that-url-automatically-opened), [MIFARE Ultralight emulation on Android](https://stackoverflow.com/questions/40673529/mifare-ultralight-emulation-on-android/40680291), [JavaCard/NTAG Type 2 limits](https://stackoverflow.com/questions/44761119/can-a-javacard-emulate-a-mifare-ultralight-or-ntag-nfc-tag).
-- **NDEF is only a data format**, not a transport. Android's `Ndef` API can read/write NDEF on Type 1-4 tags, but the physical reader must support the tag platform. [Android Ndef docs](https://docs.kony.com/NativeAPIs/Android/android.nfc.tech-Android-10.0/source/Ndef.html), [NFC Forum tag specifications](https://nfc-forum.org/build/specifications), [Type 2 vs Type 4](https://stackoverflow.com/questions/29596521/difference-between-nfc-forum-tag-2-and-nfc-forum-tag-4).
-- NTAG213/215/216 have a **locked 7-byte UID**, an **ECC originality signature**, a **24-bit NFC read counter**, UID/counter ASCII mirrors and `FAST_READ`. Static NDEF is copyable; those chip features are not. [NXP NTAG21x datasheet](https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf), [NXP product page](https://www.nxp.com/products/NTAG213_215_216).
+- Tech list: `MifareClassic, NfcA, NdefFormatable`.
+- Mode: **MIFARE Classic 1K / Crypto1**, not Type 2 / NTAG.
+- `ATQA 0400`, `SAK 08`, 16 sectors, 1024 bytes, 64 blocks.
+- `NDEF text: none`; `NdefFormatable` is present but the card is **not NDEF-formatted**.
+- Sector 0 was readable with the common default key `FFFFFFFFFFFF`.
+- Earlier v3.0 incorrectly assumed Type 2 / NTAG and showed a false `"Ultralight: NFC-A Type 2 (NfcA only)"` line because `NfcA` was present. v3.1 fixes that: `NfcA` alone is not Type 2, and MIFARE Classic takes priority.
 
-v2.0 fixed the broken Type 4 NDEF emulator (`NLEN`, CC, status words, AID registration, APDU log), but a correct Type 4 emulator still cannot answer a Type-2-only reader. So v3.0 stops implying HCE can punch a Type 2 card.
+The user confirmed the **printed barcode is NOT used** for attendance; the card punches over NFC, including from the other side. The card photos show a printed barcode, Roll No, User ID and Branch Term, plus the instruction "Entry in the classroom is strictly by ID Card". Those are visual/admin identifiers, not an NFC payload. Aakash's own admission/terms documents also say entry to classes is only with the ID card [1](https://www.aakash.ac.in/sites/default/files/medical_acst_admission-form.pdf) [5](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/target_solutions/Updatd_Terms_and_Conditions_03_07_2023.pdf). Public reports conflict — one mentions barcode attendance cards [2](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students), another says ID-card scans trigger parent SMS [3](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash) — but for **this** card the NFC path is the one to support.
+
+### The hard protocol limit
+
+- Android HCE only emulates **ISO-DEP / ISO 7816-4 / NFC Forum Type 4**, selected by an AID. The HCE UID is **random every tap**; an app cannot set UID, ATQA, SAK or ATS [1](https://developer.android.com/develop/connectivity/nfc/hce) [2](https://android.googlesource.com/platform/frameworks/base/+/c988ee/docs/html/guide/topics/connectivity/nfc/hce.jd).
+- MIFARE Classic is a proprietary NXP protocol on top of ISO 14443-3 with **Crypto1** authentication and a **fixed 4-byte UID**. It is not APDU-based, so stock Android HCE cannot emulate it [1](https://stackoverflow.com/questions/48007948/how-to-simulate-mifare-classic-1k-card-with-android) [5](https://stackoverflow.com/questions/76850329/mifare-classic-emulation-not-working-i-havent-found-a-complete-code-or-step-b/76850393#76850393) [10](https://stackoverflow.com/questions/65833264/sending-data-using-hce-or-using-secure-element-android-kotlin-mifare-1k).
+- `SAK 08` / `ATQA 0400` are consistent with MIFARE Classic 1K; block 0 (UID/BCC/SAK/ATQA/manufacturer data) is **permanently read-only on normal cards** [4](https://blog.linux-ng.de/2026/10/16/proxmark3-mifare-classic-bring-up/) [9](https://stackoverflow.com/questions/53731550/what-determines-the-sak-of-a-mifare-device).
+- A 1K card has **16 sectors × 4 blocks × 16 bytes = 1024 bytes**; each sector trailer stores Key A, access bits, GPB and Key B [1](https://github.com/XaviTorello/mifare-classic-toolkit/blob/master/README.md) [4](https://deepwiki.com/miguelbalboa/rfid/6.1-mifare-classic-cards).
+
+So **no ordinary HCE code change can make the phone become this card**. The working software path is to capture the exact full dump and write it to a real UID-changeable **Gen2/CUID magic MIFARE Classic 1K card**, or to an authorised external emulator.
 
 ---
 
-## 2. Saharanpur-specific research (what is actually public)
+## 2. Saharanpur-specific research
 
 - Official Aakash listings place the Saharanpur / Court Road centre at **No 8, 2nd Floor, Parsvnath Plaza, Court Road, Saharanpur, Uttar Pradesh 247001**, phone **+91 8800013106**, email **care@aesl.in**. [Official centre page](https://centers.aakash.ac.in/aakash-institute-court-road-coaching-center-court-road-saharanpur-99263/Home), [Aakash Saharanpur city page](https://www.aakash.ac.in/saharanpur-city).
-- The public AIATS centre list contains **`S.No. 178 Saharanpur | CC-028`**. That is an **exam-centre code**, not confirmed attendance, branch or NDEF identifier. [AIATS centre PDF](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/sm_sa/AIATS%20Center.pdf).
+- The public AIATS centre list contains **`S.No. 178 Saharanpur | CC-028`**. That is an **exam-centre code**, not confirmed attendance, branch or NFC identifier. [AIATS centre PDF](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/sm_sa/AIATS%20Center.pdf).
 - Aakash's official myAakash guide describes **PSID as an 11-digit centre-issued ID**. That is a login/student identifier, not proof of an NFC payload. [myAakash login guide](https://www.aakash.ac.in/how-to-login-download-myaakash-app).
-- Public reports conflict: one says students scan ID cards and parents get SMS; older answers mention barcode attendance cards. Reader behaviour may be branch-specific. [Parents' SMS claim](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash), [Allen/Aakash barcode claim](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students).
-- No public source confirms the **exact Aakash Saharanpur NDEF text**, reader model, UID allowlist, originality-signature check, counter check or backend API. `AAKASH-DELHI-001`, `CC-028`, `KIND_PUNCH` and `startsWith("AAKASH")` are **not** used as credential data. The app reads the exact bytes from the physical card.
-
-**Conclusion:** for a Type-2-only reader, no ordinary Android HCE app fix makes the phone become that card. The closest actually working software path is to **capture the exact NDEF and write/verify it on a real NTAG sticker**, while keeping the Type 4 path only as a clearly labelled fallback.
+- No public source confirms the exact Saharanpur reader model, UID allowlist, Crypto1 sector usage, key diversification or backend API. `AAKASH-DELHI-001`, `CC-028`, `KIND_PUNCH`, printed Roll No / User ID / barcode number and `startsWith("AAKASH")` are **not** used as credential data.
 
 ---
 
-## 3. What v3.0 changes
+## 3. What v3.1 changes
 
-1. **Exact card capture.**
-   - UID, tech list, ATQA/SAK, ATS, NDEF bytes, NDEF text records.
-   - `AAKASH` branch identifier and possible 11-digit PSID parsed from the card's NDEF text, not guessed.
-   - Type 2 / NTAG diagnostics: `GET_VERSION`, `READ_SIG` (ECC originality signature), `READ_CNT`, first Type 2 pages and Capability Container.
-   - ISO-DEP / Type 4 AID, CC and exact `NLEN + NDEF` file capture when present.
-2. **Honest classification.**
-   - `Type 2 / NTAG / NDEF` → **NOT EMULATABLE BY HCE**. The UI says so, does not auto-arm HCE, and does not claim a punch.
-   - `Type 4 / NDEF` or `ISO-DEP / APDU` → **conditional** HCE emulation.
-   - MIFARE Classic / Ultralight / UID-only / barcode / 125 kHz → unsupported.
-3. **Real NTAG sticker writer** (`WriteTagActivity`).
-   - Builds the exact `NdefMessage` from the captured NDEF bytes.
-   - Uses reader mode + `Ndef.writeNdefMessage()` / `NdefFormatable.format()` on a blank NTAG213/215/216 sticker. [Reliable NDEF writing](https://stackoverflow.com/questions/64920307/how-to-write-ndef-records-to-nfc-tag).
-   - Reads the sticker back and compares byte-for-byte; logs `TAG_WRITE` / `TAG_VERIFY`.
-   - Optional one-way `makeReadOnly()` lock, off by default.
-   - Clearly warns that the sticker has a **different UID and originality signature**.
-4. **Type 4 HCE fallback only.** The HCE service still serves the exact NDEF as a correct Type 4 tag for readers that also support Type 4 and ignore UID. It is labelled "TYPE-4 FALLBACK", not "punch". A Type-2-only reader will never reach `HostApduService`, so its diagnostics log stays empty.
-5. **No invented branch credential.** Saharanpur address/phone and `CC-028` appear only as context. The expected NDEF prefix defaults to `AAKASH`; the exact identifier comes from the card. A warning appears if the user's expected prefix is not found in the NDEF text.
-6. **Diagnostics and unit tests.** APDU/tag log is copyable; `NfcUtils` has JUnit tests for NDEF text parsing, `AAKASH`/PSID detection, APDU wildcard rules and hex/status words.
+1. **Correct MIFARE Classic classification.**
+   - `MifareClassic` tech wins over `NfcA`; Type 2 / NTAG diagnostics are skipped for this card.
+   - No more false `"Ultralight: NFC-A Type 2 (NfcA only)"` or misleading `"Type 2 diagnostics: transceive failed"` note.
+   - Compatibility text says **NOT EMULATABLE by Android HCE** and explains Crypto1 + fixed UID.
+2. **Full dump + key capture.**
+   - Tries common factory/transport keys on **Key A and Key B for all 16 sectors**.
+   - Reads all 64 blocks (1024 bytes), patches the discovered keys back into each sector trailer, and stores a `sector:type:key` map.
+   - Saves block 0, validates its **BCC** before any magic-card write, and records whether the dump is complete. If a sector uses a custom key, the app says so and tells you to recover it with MIFARE Classic Tool / Proxmark.
+3. **Real Gen2/CUID magic-card writer** (`MifareMagicActivity`).
+   - Writes the exact full dump to a blank **Gen2 / CUID / DirectWrite UID-changeable MIFARE Classic 1K** card: block 0 last, sector trailers last per sector.
+   - Uses `MifareClassic.authenticateSectorWithKeyA/B()` + `writeBlock()`; Gen2 cards accept a normal block-0 write from Android [2](https://lab401.com/blogs/academy/know-your-magic-cards) [10](https://lab401.com/blogs/academy/know-your-magic-cards).
+   - Gen1a cards need 7-bit backdoor commands (`0x40`/`0x43`) that stock Android cannot send; use Proxmark / ChameleonUltra for those [1](https://www.blackhillsinfosec.com/rfid-proximity-cloning-attacks/) [4](https://tagbase.ksec.co.uk/resources/magic-uid/).
+   - Re-tap verification compares the **new UID** and all data/access bytes; Key A is masked on read, so trailer key bytes are not falsely compared.
+   - `COPY FULL DUMP + KEY MAP` and `SHARE DUMP TEXT` export a MCT/Proxmark-friendly text report.
+4. **HCE is diagnostics only.** The app does not auto-arm HCE for MIFARE Classic. The Quick Settings tile, status line and logs say `HCE DIAGNOSTICS`, not "punch". A MIFARE Classic reader will never reach `HostApduService`, so an empty APDU log is expected.
+5. **Barcode ignored by design.** The printed barcode / Roll No / User ID / Branch Term are not hardcoded and no barcode scanner path is built. The user confirmed NFC punching.
+6. **No guessed branch credential.** Saharanpur address/phone and `CC-028` appear only as context. The exact credential comes from the physical card's UID, block 0 and sector data.
+7. **Unit tests.** JUnit tests cover NDEF parsing, APDU wildcard rules, hex/status words and MIFARE block-0 BCC validation.
 
-The single card profile is encrypted locally with AES-256-GCM using an Android Keystore key. Nothing is uploaded.
+The single card profile is encrypted locally with AES-256-GCM using an Android Keystore key. Nothing is uploaded. The older Type-2/NTAG sticker writer is retained for cards that really are Type 2, but is hidden for this MIFARE Classic card.
 
 ---
 
 ## 4. Install / use
 
-APK: [release `v3.0.0-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.0.0-saharanpur/app-release.apk)
+APK: [release `v3.1.0-mifare-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.1.0-mifare-saharanpur/app-release.apk)
 
 1. Open **Aakash Saharanpur ID** → **REGISTER / REPLACE CARD** → hold the physical Aakash ID card to the back of the phone.
-2. Review the captured **NDEF text**, `AAKASH` identifier, UID, NTAG version and compatibility line.
-3. If it says **Type 2 / NTAG / NDEF**:
-   - Do **not** rely on HCE for the real reader.
-   - Tap **WRITE EXACT NDEF TO NTAG STICKER**.
-   - Hold a blank NTAG213 / NTAG215 / NTAG216 sticker to the phone; wait for **WROTE AND VERIFIED**.
-   - Attach the sticker to the phone/card and test at the institute reader.
-   - If the reader rejects it, it is probably checking UID, originality signature, counter or online state. Use the physical card, ask the institute to enroll the sticker UID, or use an authorised external Type-2 emulator. [ChameleonUltra NTAG21x support](https://github.com/RfidResearchGroup/ChameleonUltra/blob/main/CHANGELOG.md), [Chameleon Ultra product](https://lab401.com/products/chameleon-ultra), [NFC attendance sticker example](https://buy.serialio.com/products/nfc-sticker-tag-for-iphone-android-built-in-rfid-18mm-square).
-4. If it says **Type 4 / NDEF** or **ISO-DEP / APDU**:
-   - **START PUNCH MODE**, keep NFC ON and screen ON, hold the phone to the reader.
-   - Open **PUNCH DIAGNOSTICS / READER LOG** and inspect APDUs.
-5. **ARM TYPE-4 FALLBACK** is for mixed Type-2/Type-4 readers only. It is not a Type 2 clone.
-6. **EDIT CARD / ADVANCED APDU RULES** lets you add AIDs or exact C-APDU/R-APDU rules from a reader trace supplied by the institute.
+2. Review: `MIFARE Classic 1K / Crypto1`, 16/16 sectors dump, key entries, block 0, SAK/ATQA.
+3. Tap **WRITE / EXPORT MIFARE MAGIC CARD DUMP**.
+4. If the dump is complete, hold a blank **Gen2/CUID MIFARE Classic 1K, 4-byte UID** magic card to the phone. Keep it still until `MIFARE_WRITE_OK`.
+5. Remove and re-tap it; wait for `MIFARE_VERIFY_OK` (UID + dump match).
+6. Attach the written magic card to the phone/card and test at the institute reader.
+7. If the reader rejects it:
+   - It may detect/reject "Chinese magic" cards [1](https://www.blackhillsinfosec.com/rfid-proximity-cloning-attacks/).
+   - It may require custom sector keys not found by the app; recover them with MIFARE Classic Tool / Proxmark [3](https://shop.mtoolstec.com/mifare-classic-tool-tutorial) [8](https://www.gavinjl.me/proxmark-3-cloning-a-mifare-classic-1k/).
+   - Use the physical card, ask the institute to enroll the clone UID, or use an authorised external emulator such as ChameleonUltra / Proxmark / Flipper [6](https://github.com/RfidResearchGroup/ChameleonUltra/blob/main/CHANGELOG.md).
+8. **ARM FOR DIAGNOSTICS** is only for an APDU log. It will not make the MIFARE reader accept the phone.
 
-Example rule:
+Example exported key line:
 
 ```text
-C-APDU:  00A4040007D276000085010100
-R-APDU:  6F0B8407D2760000850101A5009000
+0:A:FFFFFFFFFFFF
+0:B:FFFFFFFFFFFF
+...
+15:A:FFFFFFFFFFFF
+15:B:FFFFFFFFFFFF
 ```
-
-Wildcards: `00B0????02` matches any 4-byte READ BINARY ending in `02`; `90*` matches all wrapped DESFire commands. The R-APDU must include its status word.
 
 ---
 
 ## 5. Hard limits — read before debugging
 
-- **Type-2-only reader:** impossible on stock Android HCE. The reader sends page commands; HCE sees APDUs only.
-- **UID allowlist / originality signature / NFC counter validation:** a normal blank NTAG sticker has a different 7-byte UID and NXP signature and cannot match the counter. [NXP datasheet](https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf).
-- **Static NDEF is copyable:** if the reader only reads NDEF text, the sticker can work; if it uses crypto, counters, passwords, NTAG424 DNA or a backend challenge, it will not.
-- **MIFARE Classic / Ultralight / 125 kHz / barcode / QR:** Android NFC cannot emulate these with HCE.
-- **Crypto challenge-response:** static APDU replay fails; card secrets are not extractable by phone NFC.
-- **Screen off:** Android blocks HCE while the screen is off on most devices. Keep the screen on.
-- **Institute policy / reader database:** the app cannot add a phone or sticker UID to the institute's allowlist. Enrollment may require Aakash admin.
-- **"Perfect" compatibility:** cannot be promised without the actual reader model, a full card dump and a reader trace. Green CI, `TAG_VERIFY_OK`, and `9000` APDUs are **not** proof of an attendance punch.
-- **External hardware:** ChameleonUltra / Proxmark / Flipper-style devices can emulate Type 2, but they are separate hardware, need the real card data and permission, and do not turn stock Android HCE into Type 2. [ChameleonUltra changelog](https://github.com/RfidResearchGroup/ChameleonUltra/blob/main/CHANGELOG.md).
+- **Stock Android HCE:** cannot emulate MIFARE Classic, set a fixed UID/ATQA/SAK, or perform Crypto1 authentication [1](https://stackoverflow.com/questions/48007948/how-to-simulate-mifare-classic-1k-card-with-android) [10](https://stackoverflow.com/questions/65833264/sending-data-using-hce-or-using-secure-element-android-kotlin-mifare-1k).
+- **Normal blank MIFARE Classic card:** block 0 UID is read-only forever; it will not clone the UID [4](https://blog.linux-ng.de/2026/10/16/proxmark3-mifare-classic-bring-up/) [7](https://www.blackhillsinfosec.com/rfid-proximity-cloning-attacks/).
+- **Gen1a magic card:** needs 7-bit `0x40`/`0x43` backdoor commands; stock Android cannot send them. Use Proxmark / libnfc / ChameleonUltra [1](https://www.blackhillsinfosec.com/rfid-proximity-cloning-attacks/) [4](https://tagbase.ksec.co.uk/resources/magic-uid/).
+- **Gen2/CUID magic card:** Android-compatible direct block-0 write, but some readers detect it by probing block 0 [2](https://lab401.com/blogs/academy/know-your-magic-cards) [10](https://lab401.com/blogs/academy/know-your-magic-cards).
+- **Custom keys / access bits:** if any sector is not readable with common keys, the dump is incomplete and the writer is disabled. Bad access bits can irreversibly block a sector [1](https://github.com/XaviTorello/mifare-classic-toolkit/blob/master/README.md).
+- **Reader behaviour unknown:** it may check only the UID, one authenticated sector, a value block, a backend database, or the original card's silicon behaviour. Without a reader trace / full key recovery, "perfect" cannot be promised.
+- **Institute policy:** the app cannot add a clone UID to the institute's allowlist. Enrollment may require Aakash admin.
+- **"Perfect" compatibility:** cannot be promised without the actual reader model and a full card/reader trace. Green CI, `MIFARE_VERIFY_OK` and `9000` APDUs are **not** proof of an attendance punch.
+- **No real punch tested:** no institute reader was available in this workspace.
 
 ---
 
@@ -107,8 +114,8 @@ Pushing to `arena/87e17c3d-psd-nfc-app` runs `.github/workflows/build-apk.yml`:
 
 - JDK 17 + Android SDK 34 + Gradle 8.7,
 - `./gradlew --no-daemon --stacktrace test assembleRelease`,
-- signed APK uploaded as artifact `aakash-saharanpur-apk`,
-- attached to release `v3.0.0-saharanpur`.
+- signed APK uploaded as artifact `aakash-mifare-saharanpur-apk`,
+- attached to release `v3.1.0-mifare-saharanpur`.
 
 Local:
 
@@ -124,23 +131,27 @@ Local:
 ## 7. Sources
 
 1. [Android HCE overview](https://developer.android.com/develop/connectivity/nfc/hce)
-2. [AOSP HCE documentation](https://android.googlesource.com/platform/frameworks/base/+/c988ee6/docs/html/guide/topics/connectivity/nfc/hce.jd)
-3. [HCE cannot emulate Type 2 / NDEF tag](https://stackoverflow.com/questions/75878348/is-it-possible-to-emulate-an-nfc-tag-with-a-url-payload-on-an-omnikey-5127ck-reader-and-have-that-url-automatically-opened)
-4. [MIFARE Ultralight emulation on Android](https://stackoverflow.com/questions/40673529/mifare-ultralight-emulation-on-android/40680291)
-5. [JavaCard cannot emulate NTAG / Type 2](https://stackoverflow.com/questions/44761119/can-a-javacard-emulate-a-mifare-ultralight-or-ntag-nfc-tag)
-6. [Android Ndef API / Type 1-4](https://docs.kony.com/NativeAPIs/Android/android.nfc.tech-Android-10.0/source/Ndef.html)
-7. [NFC Forum tag specifications](https://nfc-forum.org/build/specifications)
-8. [NXP NTAG213/215/216 datasheet](https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf)
-9. [NXP NTAG21x product page](https://www.nxp.com/products/NTAG213_215_216)
-10. [Official Aakash Saharanpur / Court Road centre](https://centers.aakash.ac.in/aakash-institute-court-road-coaching-center-court-road-saharanpur-99263/Home)
-11. [Aakash Saharanpur city page](https://www.aakash.ac.in/saharanpur-city)
-12. [AIATS centre list PDF (`CC-028`)](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/sm_sa/AIATS%20Center.pdf)
-13. [myAakash login / 11-digit PSID](https://www.aakash.ac.in/how-to-login-download-myaakash-app)
-14. [Public report: ID-card scan / parent SMS](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash)
-15. [Public report: barcode attendance cards](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students)
-16. [Reliable NDEF writes with reader mode](https://stackoverflow.com/questions/64920307/how-to-write-ndef-records-to-nfc-tag)
-17. [NFC sticker for attendance](https://buy.serialio.com/products/nfc-sticker-tag-for-iphone-android-built-in-rfid-18mm-square)
-18. [ChameleonUltra NTAG21x emulation changelog](https://github.com/RfidResearchGroup/ChameleonUltra/blob/main/CHANGELOG.md)
-19. [Chameleon Ultra product / NTAG support](https://lab401.com/products/chameleon-ultra)
-20. [Generic NDEF-text attendance reader example](https://github.com/Pratheesh-555/nfc-attendance)
-21. [Type 2 vs Type 4 NDEF transport](https://stackoverflow.com/questions/29596521/difference-between-nfc-forum-tag-2-and-nfc-forum-tag-4)
+2. [AOSP HCE documentation](https://android.googlesource.com/platform/frameworks/base/+/c988ee/docs/html/guide/topics/connectivity/nfc/hce.jd)
+3. [MIFARE Classic cannot be emulated by Android HCE](https://stackoverflow.com/questions/48007948/how-to-simulate-mifare-classic-1k-card-with-android)
+4. [HCE only emulates Type 4A; not MIFARE Classic](https://stackoverflow.com/questions/76850329/mifare-classic-emulation-not-working-i-havent-found-a-complete-code-or-step-b/76850393#76850393)
+5. [MIFARE Classic 1K / HCE / secure element discussion](https://stackoverflow.com/questions/65833264/sending-data-using-hce-or-using-secure-element-android-kotlin-mifare-1k)
+6. [MIFARE Classic 1K memory layout / keys / sector trailer](https://github.com/XaviTorello/mifare-classic-toolkit/blob/master/README.md)
+7. [MIFARE Classic 1K: 16 sectors, 64 blocks, sector trailer](https://deepwiki.com/miguelbalboa/rfid/6.1-mifare-classic-cards)
+8. [SAK 08 / block 0 locked / magic vs normal card](https://blog.linux-ng.de/2026/10/16/proxmark3-mifare-classic-bring-up/)
+9. [SAK / block 0 UID+BCC notes](https://stackoverflow.com/questions/53731550/what-determines-the-sak-of-a-mifare-device)
+10. [Magic MIFARE cards: Gen1a vs Gen2/CUID, Android compatibility](https://lab401.com/blogs/academy/know-your-magic-cards)
+11. [Gen1a unlock `0x43`/`0x40`, MCT / Proxmark cloning](https://www.blackhillsinfosec.com/rfid-proximity-cloning-attacks/)
+12. [Magic UID card generations](https://tagbase.ksec.co.uk/resources/magic-uid/)
+13. [MIFARE Classic Tool write-dump tutorial](https://shop.mtoolstec.com/mifare-classic-tool-tutorial)
+14. [Proxmark3 MIFARE Classic key recovery / dump](https://www.gavinjl.me/proxmark-3-cloning-a-mifare-classic-1k/)
+15. [ChameleonUltra MIFARE / NTAG emulation changelog](https://github.com/RfidResearchGroup/ChameleonUltra/blob/main/CHANGELOG.md)
+16. [Official Aakash Saharanpur / Court Road centre](https://centers.aakash.ac.in/aakash-institute-court-road-coaching-center-court-road-saharanpur-99263/Home)
+17. [Aakash Saharanpur city page](https://www.aakash.ac.in/saharanpur-city)
+18. [AIATS centre list PDF (`CC-028`)](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/sm_sa/AIATS%20Center.pdf)
+19. [myAakash login / 11-digit PSID](https://www.aakash.ac.in/how-to-login-download-myaakash-app)
+20. [Aakash admission form: entry only with ID card](https://www.aakash.ac.in/sites/default/files/medical_acst_admission-form.pdf)
+21. [Aakash terms: entry to classes only with Identity Card](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/target_solutions/Updatd_Terms_and_Conditions_03_07_2023.pdf)
+22. [Public report: barcode attendance cards](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students)
+23. [Public report: ID-card scan / parent SMS](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash)
+24. [Android Ndef API / Type 1-4](https://docs.kony.com/NativeAPIs/Android/android.nfc.tech-Android-10.0/source/Ndef.html)
+25. [NFC Forum tag specifications](https://nfc-forum.org/build/specifications)

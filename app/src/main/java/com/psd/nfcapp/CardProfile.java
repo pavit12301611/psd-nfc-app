@@ -5,6 +5,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -95,6 +96,11 @@ public class CardProfile {
     public int mifareBlockCount;
     public int mifareSize;
     public String mifareBlocksHex;
+    public String mifareBlock0Hex;
+    public int mifareReadableSectors;
+    public boolean mifareDumpComplete;
+    /** Entries: "sector:keyType:keyHex", e.g. "0:A:FFFFFFFFFFFF". */
+    public List<String> mifareSectorKeys = new ArrayList<>();
 
     public String ultralightType;
     public String ultralightPagesHex;
@@ -130,11 +136,60 @@ public class CardProfile {
         return MODE_TYPE2_NDEF.equals(mode) && ndefHex != null && !ndefHex.isEmpty();
     }
 
+    /** A full MIFARE Classic dump can be written to a UID-changeable Gen2/CUID magic card. */
+    public boolean canWriteMagicCard() {
+        return MODE_MIFARE_CLASSIC.equals(mode)
+                && mifareDumpComplete
+                && mifareBlocksHex != null
+                && mifareBlockCount > 0
+                && mifareBlocksHex.length() >= mifareBlockCount * 32
+                && mifareBlock0Hex != null
+                && NfcUtils.isValidMifareBlock0(mifareBlock0Hex,
+                        uidHex == null || uidHex.isEmpty() ? 4 : uidHex.length() / 2);
+    }
+
+    public String mifareKeyMapText() {
+        if (mifareSectorKeys.isEmpty()) return "none";
+        StringBuilder sb = new StringBuilder();
+        for (String k : mifareSectorKeys) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(k);
+        }
+        return sb.toString();
+    }
+
+    public String sectorKey(int sector, String type) {
+        for (String entry : mifareSectorKeys) {
+            String[] parts = entry.split(":");
+            if (parts.length == 3
+                    && parts[0].equals(String.valueOf(sector))
+                    && parts[1].equalsIgnoreCase(type)
+                    && parts[2].length() == 12) {
+                return parts[2];
+            }
+        }
+        return "";
+    }
+
+    public String mifareDumpFormatted() {
+        if (mifareBlocksHex == null || mifareBlockCount <= 0) return "";
+        StringBuilder sb = new StringBuilder();
+        int max = Math.min(mifareBlockCount, mifareBlocksHex.length() / 32);
+        for (int b = 0; b < max; b++) {
+            sb.append(String.format(Locale.US, "B%02d: %s", b,
+                    mifareBlocksHex.substring(b * 32, b * 32 + 32)));
+            if (b < max - 1) sb.append('\n');
+        }
+        return sb.toString();
+    }
+
     public String modeLabel() {
         if (MODE_TYPE2_NDEF.equals(mode)) return "Type 2 / NTAG / NDEF";
         if (MODE_NDEF.equals(mode)) return "Type 4 / NDEF";
         if (MODE_APDU.equals(mode)) return "ISO-DEP / APDU";
-        if (MODE_MIFARE_CLASSIC.equals(mode)) return "MIFARE Classic";
+        if (MODE_MIFARE_CLASSIC.equals(mode)) {
+            return "MIFARE Classic 1K / Crypto1" + (mifareDumpComplete ? " (full dump)" : "");
+        }
         if (MODE_MIFARE_ULTRALIGHT.equals(mode)) return "MIFARE Ultralight";
         if (MODE_UID_ONLY.equals(mode)) return "UID / ISO 14443-3 only";
         return "Unsupported protocol";
@@ -167,9 +222,22 @@ public class CardProfile {
                     + "challenge-response. Static APDU replay is not a cryptographic clone.";
         }
         if (MODE_MIFARE_CLASSIC.equals(mode)) {
-            return "NOT EMULATABLE on stock Android: MIFARE Classic uses ISO 14443-3 + Crypto1, "
-                    + "not ISO-DEP/ISO 7816-4 APDUs. Android HCE cannot reproduce its fixed UID, "
-                    + "authentication, or sector data.";
+            String dump = mifareDumpComplete
+                    ? "Full " + (mifareBlocksHex == null ? 0 : mifareBlocksHex.length() / 2)
+                    + "-byte dump and sector keys captured."
+                    : "Only " + mifareReadableSectors + "/" + mifareSectorCount
+                    + " sectors could be read with common default keys; recover the rest with "
+                    + "MIFARE Classic Tool / Proxmark before cloning.";
+            return "NOT EMULATABLE on stock Android HCE. MIFARE Classic uses ISO 14443-3 + Crypto1, "
+                    + "a fixed " + (uidHex == null || uidHex.isEmpty() ? 4 : uidHex.length() / 2)
+                    + "-byte UID, ATQA/SAK and per-sector keys, not ISO-DEP/ISO 7816-4 APDUs. "
+                    + "Android cannot reproduce the UID or Crypto1 authentication. " + dump
+                    + " Workable paths: write the full dump to a Gen2/CUID UID-changeable MIFARE "
+                    + "Classic 1K magic card (block 0 writable), or use an authorised external "
+                    + "emulator (ChameleonUltra / Proxmark / Flipper). A normal blank MIFARE Classic "
+                    + "card has a read-only block 0, and an NTAG/Type-2 sticker is the wrong protocol. "
+                    + "A reader may check only the UID, or authenticate sector data; both require the "
+                    + "original UID/keys. HCE here is diagnostics only.";
         }
         if (MODE_MIFARE_ULTRALIGHT.equals(mode)) {
             return "NOT EMULATABLE on stock Android: MIFARE Ultralight / Type 2 is a low-level "
@@ -189,6 +257,11 @@ public class CardProfile {
         if (MODE_TYPE2_NDEF.equals(mode)) {
             return "Use WRITE NTAG STICKER, or the physical card. HCE fallback is only a "
                     + "diagnostic / Type-4-reader fallback.";
+        }
+        if (MODE_MIFARE_CLASSIC.equals(mode)) {
+            return canWriteMagicCard()
+                    ? "Use WRITE MIFARE MAGIC CARD (Gen2/CUID) or an authorised external emulator; HCE is diagnostics only."
+                    : "Recover all sector keys first, then use a Gen2/CUID magic card or external emulator.";
         }
         if (canEmulate()) {
             return "Start HCE punch mode and check the APDU log.";
@@ -278,6 +351,9 @@ public class CardProfile {
             o.put("mifareBlockCount", mifareBlockCount);
             o.put("mifareSize", mifareSize);
             o.put("mifareBlocksHex", str(mifareBlocksHex));
+            o.put("mifareBlock0Hex", str(mifareBlock0Hex));
+            o.put("mifareReadableSectors", mifareReadableSectors);
+            o.put("mifareDumpComplete", mifareDumpComplete);
             o.put("ultralightType", str(ultralightType));
             o.put("ultralightPagesHex", str(ultralightPagesHex));
             o.put("ntagVersionHex", str(ntagVersionHex));
@@ -293,6 +369,10 @@ public class CardProfile {
             JSONArray texts = new JSONArray();
             for (String t : ndefTexts) texts.put(t);
             o.put("ndefTexts", texts);
+
+            JSONArray keys = new JSONArray();
+            for (String k : mifareSectorKeys) keys.put(k);
+            o.put("mifareSectorKeys", keys);
 
             JSONArray a = new JSONArray();
             for (String aid : aids) a.put(aid);
@@ -347,6 +427,9 @@ public class CardProfile {
             p.mifareBlockCount = o.optInt("mifareBlockCount");
             p.mifareSize = o.optInt("mifareSize");
             p.mifareBlocksHex = o.optString("mifareBlocksHex");
+            p.mifareBlock0Hex = o.optString("mifareBlock0Hex");
+            p.mifareReadableSectors = o.optInt("mifareReadableSectors");
+            p.mifareDumpComplete = o.optBoolean("mifareDumpComplete");
             p.ultralightType = o.optString("ultralightType");
             p.ultralightPagesHex = o.optString("ultralightPagesHex");
             p.ntagVersionHex = o.optString("ntagVersionHex");
@@ -362,6 +445,10 @@ public class CardProfile {
             JSONArray texts = o.optJSONArray("ndefTexts");
             if (texts != null) {
                 for (int i = 0; i < texts.length(); i++) p.ndefTexts.add(texts.optString(i));
+            }
+            JSONArray keys = o.optJSONArray("mifareSectorKeys");
+            if (keys != null) {
+                for (int i = 0; i < keys.length(); i++) p.mifareSectorKeys.add(keys.optString(i));
             }
             JSONArray a = o.optJSONArray("aids");
             if (a != null) {

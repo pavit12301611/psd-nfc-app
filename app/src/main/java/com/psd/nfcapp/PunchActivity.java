@@ -63,8 +63,7 @@ public class PunchActivity extends Activity {
             refresh();
         });
         findViewById(R.id.btnCopyLog).setOnClickListener(v -> copyDiagnostics());
-        btnWriteSticker.setOnClickListener(v ->
-                startActivity(new Intent(this, WriteTagActivity.class)));
+        btnWriteSticker.setOnClickListener(v -> openCredentialWriter());
         btnStop.setOnClickListener(v -> {
             CardProfile p = store.loadProfile();
             store.setArmed(false);
@@ -97,19 +96,49 @@ public class PunchActivity extends Activity {
         handler.removeCallbacks(refreshRunnable);
     }
 
+    private void openCredentialWriter() {
+        CardProfile p = store.loadProfile();
+        if (p == null) {
+            Toast.makeText(this, "Register your physical card first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Class<?> target;
+        if (CardProfile.MODE_MIFARE_CLASSIC.equals(p.mode)) {
+            target = MifareMagicActivity.class;
+        } else if (p.canWriteSticker()) {
+            target = WriteTagActivity.class;
+        } else {
+            Toast.makeText(this, "No physical-tag write path for this card", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        startActivity(new Intent(this, target));
+    }
+
     private void refresh() {
         CardProfile p = store.loadProfile();
         boolean armed = store.isArmed();
         boolean type2 = p != null && CardProfile.MODE_TYPE2_NDEF.equals(p.mode);
+        boolean mifare = p != null && CardProfile.MODE_MIFARE_CLASSIC.equals(p.mode);
         if (armed && type2) {
             txStatus.setText("● TYPE-4 FALLBACK ARMED (NOT TYPE-2)");
+            txStatus.setTextColor(0xFFFFB74D);
+        } else if (armed && mifare) {
+            txStatus.setText("● HCE DIAGNOSTICS ARMED (NOT MIFARE CLASSIC)");
             txStatus.setTextColor(0xFFFFB74D);
         } else {
             txStatus.setText(armed ? "● PUNCH MODE ARMED" : "○ PUNCH MODE OFF");
             txStatus.setTextColor(armed ? 0xFF7CFC00 : 0xFF9E9E9E);
         }
-        btnStop.setText(armed ? (type2 ? "STOP TYPE-4 FALLBACK" : "STOP PUNCH MODE") : "CLOSE");
-        btnWriteSticker.setVisibility(p != null && p.canWriteSticker() ? View.VISIBLE : View.GONE);
+        btnStop.setText(armed
+                ? (type2 ? "STOP TYPE-4 FALLBACK" : (mifare ? "STOP HCE DIAGNOSTICS" : "STOP PUNCH MODE"))
+                : "CLOSE");
+        boolean showWriter = p != null && (p.canWriteSticker() || mifare);
+        btnWriteSticker.setVisibility(showWriter ? View.VISIBLE : View.GONE);
+        if (showWriter) {
+            btnWriteSticker.setText(mifare
+                    ? "WRITE / EXPORT MIFARE MAGIC CARD DUMP"
+                    : "WRITE EXACT NDEF TO NTAG STICKER");
+        }
 
         if (p == null) {
             txCardSummary.setText("No card registered.");
@@ -123,6 +152,11 @@ public class PunchActivity extends Activity {
                     + "\nNDEF text: " + p.ndefTextListText()
                     + "\nAakash ID: " + (TextUtils.isEmpty(p.aakashId) ? "not found" : p.aakashId)
                     + "\nExact NDEF: " + (TextUtils.isEmpty(p.ndefHex) ? "no" : p.ndefHex.length() / 2 + " bytes")
+                    + (mifare ? "\nMIFARE dump: " + (p.mifareDumpComplete ? "COMPLETE " : "PARTIAL ")
+                    + p.mifareReadableSectors + "/" + p.mifareSectorCount + " sectors, "
+                    + p.mifareSectorKeys.size() + " key entries"
+                    + "\nBlock 0: " + p.mifareBlock0Hex
+                    + "\nKeys: " + p.mifareKeyMapText() : "")
                     + "\nAIDs: " + p.aidListText()
                     + "\nAPDU rules: " + p.rules.size()
                     + "\nRecommended: " + p.recommendedActionText());
@@ -137,11 +171,10 @@ public class PunchActivity extends Activity {
         List<String> log = store.getLog();
         if (log.isEmpty()) {
             txLog.setText("No APDUs or tag writes yet.\n\n"
-                    + "If you tap the attendance reader and this stays empty, the reader did not "
-                    + "open an ISO-DEP / HCE session. A dedicated Type-2 / NTAG reader will ALWAYS "
-                    + "look empty here: it never reaches HostApduService. For Type 2 use the "
-                    + "written NTAG sticker or the physical card. TAG_WRITE / TAG_VERIFY lines "
-                    + "appear only after using the sticker writer.");
+                    + "A MIFARE Classic reader will ALWAYS look empty here: it never reaches "
+                    + "HostApduService. Use WRITE / EXPORT MIFARE MAGIC CARD DUMP. "
+                    + "MIFARE_WRITE / MIFARE_VERIFY lines appear after using the magic-card writer. "
+                    + "TAG_WRITE / TAG_VERIFY lines are for Type-2/NTAG stickers only.");
         } else {
             txLog.setText(TextUtils.join("\n", log));
         }
@@ -174,6 +207,16 @@ public class PunchActivity extends Activity {
             sb.append("Exact NDEF bytes: ")
                     .append(TextUtils.isEmpty(p.ndefHex) ? "0" : String.valueOf(p.ndefHex.length() / 2))
                     .append('\n');
+            if (CardProfile.MODE_MIFARE_CLASSIC.equals(p.mode)) {
+                sb.append("MIFARE size: ").append(p.mifareSize).append(" bytes, sectors ")
+                        .append(p.mifareSectorCount).append(", blocks ").append(p.mifareBlockCount)
+                        .append('\n');
+                sb.append("MIFARE dump complete: ").append(p.mifareDumpComplete).append('\n');
+                sb.append("MIFARE readable sectors: ").append(p.mifareReadableSectors).append('\n');
+                sb.append("MIFARE block 0: ").append(p.mifareBlock0Hex).append('\n');
+                sb.append("MIFARE key map:\n").append(p.mifareKeyMapText()).append('\n');
+                sb.append("MIFARE dump:\n").append(p.mifareDumpFormatted()).append('\n');
+            }
             sb.append("NTAG GET_VERSION: ").append(p.ntagVersionHex).append('\n');
             sb.append("Originality signature: ")
                     .append(TextUtils.isEmpty(p.originalitySignatureHex) ? "not captured" : "captured")

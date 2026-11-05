@@ -211,7 +211,15 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
         }
         if (!TextUtils.isEmpty(p.mifareType)) {
             sb.append("MIFARE: ").append(p.mifareType).append(", ").append(p.mifareSize)
-                    .append(" bytes, ").append(p.mifareSectorCount).append(" sectors\n");
+                    .append(" bytes, ").append(p.mifareSectorCount).append(" sectors, ")
+                    .append(p.mifareBlockCount).append(" blocks\n");
+            sb.append("MIFARE dump: ")
+                    .append(p.mifareDumpComplete ? "COMPLETE" : "PARTIAL " + p.mifareReadableSectors
+                            + "/" + p.mifareSectorCount + " sectors")
+                    .append('\n');
+            sb.append("MIFARE block 0: ").append(p.mifareBlock0Hex).append('\n');
+            sb.append("MIFARE key entries: ").append(p.mifareSectorKeys.size()).append('\n');
+            sb.append("MIFARE keys:\n").append(p.mifareKeyMapText()).append('\n');
         }
         if (!TextUtils.isEmpty(p.ultralightType)) {
             sb.append("Ultralight: ").append(p.ultralightType).append('\n');
@@ -345,10 +353,13 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
 
     private void finishAfterSave(boolean aidOk) {
         boolean type2 = CardProfile.MODE_TYPE2_NDEF.equals(captured.mode);
+        boolean mifare = CardProfile.MODE_MIFARE_CLASSIC.equals(captured.mode);
         String suffix;
         if (aidOk) {
             if (type2) {
                 suffix = "Card registered. HCE fallback is OFF; use WRITE NTAG STICKER for the real Type-2 reader.";
+            } else if (mifare) {
+                suffix = "Card registered. HCE is OFF; use WRITE / EXPORT MIFARE MAGIC CARD DUMP.";
             } else if (captured.canEmulate()) {
                 suffix = "Card registered and punch mode armed.";
             } else {
@@ -358,7 +369,30 @@ public class RegisterActivity extends Activity implements NfcAdapter.ReaderCallb
             suffix = "Card saved, but Android rejected dynamic AID registration. Check diagnostics.";
         }
 
-        if (type2) {
+        if (mifare) {
+            String dumpStatus = captured.mifareDumpComplete
+                    ? "Full " + captured.mifareBlockCount + "-block dump and sector keys captured."
+                    : "Only " + captured.mifareReadableSectors + "/" + captured.mifareSectorCount
+                    + " sectors could be read; recover remaining keys first.";
+            new AlertDialog.Builder(this)
+                    .setTitle("MIFARE Classic card registered")
+                    .setMessage(captured.compatibilityText() + "\n\n" + suffix
+                            + "\n\n" + dumpStatus
+                            + "\n\nStock Android HCE cannot present this card. Use a Gen2/CUID "
+                            + "UID-changeable magic card, or an authorised external emulator such "
+                            + "as ChameleonUltra / Proxmark. The printed barcode is NOT used.")
+                    .setCancelable(false)
+                    .setPositiveButton("Magic card / dump", (d, w) -> {
+                        startActivity(new Intent(this, MifareMagicActivity.class));
+                        finish();
+                    })
+                    .setNeutralButton("Diagnostics", (d, w) -> {
+                        startActivity(new Intent(this, PunchActivity.class));
+                        finish();
+                    })
+                    .setNegativeButton("Close", (d, w) -> finish())
+                    .show();
+        } else if (type2) {
             new AlertDialog.Builder(this)
                     .setTitle("Type 2 / NTAG card registered")
                     .setMessage(captured.compatibilityText() + "\n\n" + suffix

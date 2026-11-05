@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="14dp"
-            android:text="Saharanpur Aakash ID card: exact NDEF capture, real NTAG sticker writer, and a clearly labelled Type-4 HCE fallback."
+            android:text="Saharanpur Aakash ID card: MIFARE Classic full dump, Gen2/CUID magic-card writer, and honest HCE diagnostics."
             android:textColor="#9E9E9E"
             android:textSize="13sp" />
 
@@ -126,7 +126,7 @@
             android:layout_height="52dp"
             android:layout_marginTop="8dp"
             android:background="@drawable/btn_white"
-            android:text="WRITE EXACT NDEF TO NTAG STICKER"
+            android:text="WRITE / EXPORT PHYSICAL CREDENTIAL"
             android:textAllCaps="true"
             android:textColor="#000000"
             android:textSize="13sp"

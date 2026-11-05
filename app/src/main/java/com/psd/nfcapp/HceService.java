@@ -32,12 +32,18 @@ public class HceService extends HostApduService {
             session.reset();
             fallbackLogged = false;
         }
-        if (!fallbackLogged && cachedProfile != null
-                && CardProfile.MODE_TYPE2_NDEF.equals(cachedProfile.mode)) {
-            store.appendLog("TYPE2_FALLBACK | registered card is NFC Forum Type 2 / NTAG; "
-                    + "this service only serves Type 4/ISO-DEP. A Type-2-only reader will "
-                    + "never reach this service.");
-            fallbackLogged = true;
+        if (!fallbackLogged && cachedProfile != null) {
+            if (CardProfile.MODE_TYPE2_NDEF.equals(cachedProfile.mode)) {
+                store.appendLog("TYPE2_FALLBACK | registered card is NFC Forum Type 2 / NTAG; "
+                        + "this service only serves Type 4/ISO-DEP. A Type-2-only reader will "
+                        + "never reach this service.");
+                fallbackLogged = true;
+            } else if (CardProfile.MODE_MIFARE_CLASSIC.equals(cachedProfile.mode)) {
+                store.appendLog("MIFARE_DIAGNOSTIC | registered card is MIFARE Classic / Crypto1; "
+                        + "Android HCE cannot set its UID/ATQA/SAK or authenticate sectors. "
+                        + "Any APDUs here are diagnostics only; the reader will not accept the phone.");
+                fallbackLogged = true;
+            }
         }
 
         String cmd = NfcUtils.bytesToHex(apdu);

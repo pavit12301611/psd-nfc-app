@@ -36,6 +36,9 @@
         <activity
             android:name=".WriteTagActivity"
             android:exported="false" />
+        <activity
+            android:name=".MifareMagicActivity"
+            android:exported="false" />
 
         <!-- Type 4 / ISO-DEP fallback only; a Type 2 reader uses a physical NTAG sticker. -->
         <service

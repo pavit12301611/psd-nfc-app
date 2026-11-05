@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B1020"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/magicTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Write full MIFARE Classic dump to a UID-changeable magic card"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/magicStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:text="Ready. Hold a blank Gen2/CUID MIFARE Classic 1K magic card to the phone after tapping WRITE."
+            android:textColor="#8CE99A"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/magicDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:text=""
+            android:textColor="#C9D4FF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/magicCardInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:text=""
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/magicDumpPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:text=""
+            android:textColor="#FFD166"
+            android:textIsSelectable="true"
+            android:textSize="11sp" />
+
+        <CheckBox
+            android:id="@+id/checkSkipBlock0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:buttonTint="#FFFFFF"
+            android:checked="false"
+            android:padding="8dp"
+            android:text="Skip block 0 (for a normal blank MIFARE Classic card). UID will NOT match; reader may reject it."
+            android:textColor="#FFB4A2"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnWriteMagic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/btn_white"
+            android:padding="14dp"
+            android:text="WRITE FULL DUMP TO GEN2/CUID MAGIC CARD"
+            android:textColor="#0B1020"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnVerifyMagic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/btn_ghost"
+            android:padding="14dp"
+            android:text="VERIFY MAGIC CARD (UID + DUMP)"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btnCopyDump"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/btn_ghost"
+            android:padding="14dp"
+            android:text="COPY FULL DUMP + KEY MAP"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btnShareDump"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/btn_ghost"
+            android:padding="14dp"
+            android:text="SHARE DUMP TEXT (MCT / PROXMARK)"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnCloseMagic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/btn_ghost"
+            android:padding="14dp"
+            android:text="CLOSE"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Requires a Gen2/CUID (DirectWrite) UID-changeable MIFARE Classic 1K card with a 4-byte UID. Gen1a cards need 7-bit backdoor commands that stock Android cannot send; use Proxmark or ChameleonUltra for those. Normal MIFARE Classic cards have read-only block 0. Some attendance readers detect and reject magic cards. Use only for your own card, with institute permission. A successful write/verify is not proof that the institute reader accepted the punch."
+            android:textColor="#8A94B8"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

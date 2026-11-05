@@ -102,9 +102,14 @@ public final class HceRegistrar {
         String aids = registeredAidsText(ctx);
         boolean aidOk = store.isAidRegistrationOk();
         CardProfile p = store.loadProfile();
-        String path = p != null && CardProfile.MODE_TYPE2_NDEF.equals(p.mode)
-                ? "Type 4 fallback only (registered card is Type 2 / NTAG)"
-                : "ISO-DEP / Type 4";
+        String path;
+        if (p != null && CardProfile.MODE_MIFARE_CLASSIC.equals(p.mode)) {
+            path = "Diagnostics only (MIFARE Classic / Crypto1 is not HCE-emulatable)";
+        } else if (p != null && CardProfile.MODE_TYPE2_NDEF.equals(p.mode)) {
+            path = "Type 4 fallback only (registered card is Type 2 / NTAG)";
+        } else {
+            path = "ISO-DEP / Type 4";
+        }
         return "NFC: " + (nfcOn ? "ON" : "OFF")
                 + "  |  HCE: " + (hce ? "supported" : "unsupported")
                 + "\nHCE path: " + path

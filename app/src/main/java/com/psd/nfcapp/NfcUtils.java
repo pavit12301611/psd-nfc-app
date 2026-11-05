@@ -285,6 +285,23 @@ public final class NfcUtils {
         return sb.toString();
     }
 
+    /**
+     * Minimal MIFARE Classic block-0 sanity check copied from the common MCT rules:
+     * for 4-byte UIDs the 5th byte must be the XOR/BCC of the UID and UID0 must not
+     * be a cascade/reserved marker. This prevents bricking a Gen2/CUID magic card.
+     */
+    public static boolean isValidMifareBlock0(String block0Hex, int uidLength) {
+        byte[] b = hexToBytesStrict(block0Hex);
+        if (b == null || b.length != 16) return false;
+        if (uidLength == 4) {
+            byte bcc = (byte) (b[0] ^ b[1] ^ b[2] ^ b[3]);
+            if ((b[4] & 0xFF) != (bcc & 0xFF)) return false;
+            int first = b[0] & 0xFF;
+            return first != 0x88 && first != 0xF8;
+        }
+        return uidLength == 7 || uidLength == 10;
+    }
+
     public static String statusWordName(byte[] response) {
         if (response == null || response.length < 2) return "no SW";
         String sw = bytesToHex(new byte[]{response[response.length - 2], response[response.length - 1]});

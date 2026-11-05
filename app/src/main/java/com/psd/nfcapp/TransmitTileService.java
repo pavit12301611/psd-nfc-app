@@ -35,9 +35,12 @@ public class TransmitTileService extends TileService {
         if (t == null) return;
         boolean on = p != null && store.isArmed();
         boolean type2 = p != null && CardProfile.MODE_TYPE2_NDEF.equals(p.mode);
+        boolean mifare = p != null && CardProfile.MODE_MIFARE_CLASSIC.equals(p.mode);
         t.setState(on ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         if (p == null) {
             t.setLabel("Aakash ID");
+        } else if (mifare) {
+            t.setLabel(on ? "HCE Diagnostics ON" : "HCE Diagnostics");
         } else if (type2) {
             t.setLabel(on ? "Type4 Fallback ON" : "Type4 Fallback");
         } else {
