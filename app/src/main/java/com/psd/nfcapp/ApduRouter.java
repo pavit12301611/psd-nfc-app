@@ -222,7 +222,7 @@ public final class ApduRouter {
     private static byte[] fci(byte[] aid) {
         // 6F <len> 84 <len> <AID> A5 00
         return NfcUtils.concat(
-                new byte[]{0x6F, (byte) (aid.length + 4), 0x84, (byte) aid.length},
+                new byte[]{0x6F, (byte) (aid.length + 4), (byte) 0x84, (byte) aid.length},
                 aid,
                 new byte[]{(byte) 0xA5, 0x00});
     }
