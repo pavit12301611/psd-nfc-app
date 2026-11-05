@@ -48,6 +48,19 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee /tmp/build.log
 
+      - name: Surface Gradle errors as annotations
+        if: failure()
+        run: |
+          if [ -f /tmp/build.log ]; then
+            echo "### Gradle errors" >> "$GITHUB_STEP_SUMMARY"
+            grep -E 'error:|FAILURE:|What went wrong|Execution failed|^e: |Caused by:|symbol:|location:' /tmp/build.log \
+              | head -40 | while IFS= read -r line; do
+                clean=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')
+                echo "::error::$clean"
+                echo "$line" >> "$GITHUB_STEP_SUMMARY"
+              done
+          fi
+
       - name: Upload build log (only on failure)
         if: failure()
         uses: actions/upload-artifact@v4
