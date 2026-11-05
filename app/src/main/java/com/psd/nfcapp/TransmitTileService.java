@@ -4,14 +4,8 @@ import android.content.Intent;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
-import java.util.List;
-
-/**
- * Quick-settings tile ("NFC Transmit") — one tap arms the last used NFC tile so
- * transmission stays active (visible even on the lock screen), tap again to stop.
- */
+/** Quick Settings toggle for punch mode. It never transmits links or NDEF pushes. */
 public class TransmitTileService extends TileService {
-
     @Override
     public void onStartListening() {
         refreshTile();
@@ -19,29 +13,29 @@ public class TransmitTileService extends TileService {
 
     @Override
     public void onClick() {
-        HceService.refresh(getApplicationContext());
-        if (HceService.isActive()) {
-            HceService.setArmed(getApplicationContext(), null);
-        } else {
-            List<NfcItem> all = new VaultStore(this).loadAll();
-            if (all.isEmpty()) {
-                Intent i = new Intent(this, MainActivity.class);
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivityAndCollapse(i);
-            } else {
-                HceService.setArmed(getApplicationContext(), all.get(all.size() - 1).id);
-            }
+        CardStore store = new CardStore(getApplicationContext());
+        CardProfile p = store.loadProfile();
+        if (p == null) {
+            Intent i = new Intent(this, MainActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivityAndCollapse(i);
+            refreshTile();
+            return;
         }
+        boolean next = !store.isArmed();
+        store.setArmed(next);
+        HceRegistrar.sync(getApplicationContext(), p);
         refreshTile();
     }
 
     private void refreshTile() {
-        HceService.refresh(getApplicationContext());
+        CardStore store = new CardStore(getApplicationContext());
+        CardProfile p = store.loadProfile();
         Tile t = getQsTile();
         if (t == null) return;
-        boolean on = HceService.isActive();
+        boolean on = p != null && store.isArmed();
         t.setState(on ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
-        t.setLabel(on ? "NFC ON" : "NFC Transmit");
+        t.setLabel(on ? "Aakash Punch ON" : "Aakash Punch");
         t.updateTile();
     }
 }

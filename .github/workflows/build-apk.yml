@@ -1,8 +1,8 @@
-name: Build PSD NFC APK
+name: Build Aakash ID Punch APK
 
 on:
   push:
-    branches: [arena/e25bd87f-psd-nfc-app]
+    branches: [arena/87e17c3d-psd-nfc-app]
   workflow_dispatch:
 
 permissions:
@@ -43,56 +43,40 @@ jobs:
             https://raw.githubusercontent.com/gradle/gradle/v8.7.0/gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
 
-      - name: Build release APK (signed with signing/release-keystore.p12)
+      - name: Build signed release APK
         run: |
+          set -o pipefail
           ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee /tmp/build.log
-          exit "${PIPESTATUS[0]}"
 
-      - name: Push build log to branch for debugging (only on failure)
+      - name: Upload build log (only on failure)
         if: failure()
-        run: |
-          cp /tmp/build.log ci-build-debug.log
-          git config user.name "ci-bot"
-          git config user.email "ci-bot@users.noreply.github.com"
-          git add -f ci-build-debug.log
-          git commit -m "ci-log: gradle build log [skip ci]" || true
-          git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}" || true
+        uses: actions/upload-artifact@v4
+        with:
+          name: aakash-punch-build-log
+          path: /tmp/build.log
+          retention-days: 7
 
       - name: Inspect APK
         run: |
           ls -la app/build/outputs/apk/release/
           unzip -l app/build/outputs/apk/release/app-release.apk | head -40
 
-      - name: Upload artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: psd-nfc-apk
+          name: aakash-id-punch-apk
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
-      - name: Commit APK into dist/ on this branch (so it is directly fetchable from GitHub)
-        run: |
-          mkdir -p dist
-          cp app/build/outputs/apk/release/app-release.apk dist/app-release.apk
-          git config user.name "ci-bot"
-          git config user.email "ci-bot@users.noreply.github.com"
-          git add -f dist/app-release.apk
-          git commit -m "ci: release APK build ${GITHUB_SHA:0:7} [skip ci]" || true
-          git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}" || true
-
-      - name: Publish GitHub Release with APK asset (direct download link)
+      - name: Publish GitHub Release with APK
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -x
+          TAG=v2.0.0-aakash
           APK=app/build/outputs/apk/release/app-release.apk
-          gh release view v1.0.0 >/dev/null 2>&1 || gh release create v1.0.0 --target "$GITHUB_SHA" --title "PSD NFC v1.0.0" \
-            --notes "PSD NFC — fast & secure NFC link transmitter (Samsung Galaxy A53 5G & any NFC phone). Direct APK download: https://github.com/${{ github.repository }}/releases/download/v1.0.0/app-release.apk"
-          ok=0
-          for i in 1 2 3; do
-            if gh release upload v1.0.0 "$APK" --clobber; then ok=1; break; fi
-            echo "upload attempt $i failed"; sleep 5
-          done
-          [ "$ok" = "1" ] || echo "WARN: release asset upload failed"
-          gh release view v1.0.0 --json assets --jq '.assets[].browser_download_url' || true
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" \
+            --title "Aakash ID Punch v2.0 — real HCE attendance profile" \
+            --notes "Single-card Aakash attendance HCE app. Registers the physical card's tech, AIDs and APDU/NDEF data; serves a correct Type 4 tag; logs reader APDUs. Android HCE cannot clone fixed UID / MIFARE Classic / 125 kHz / barcode cards. APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
+          gh release upload "$TAG" "$APK" --clobber
+          gh release view "$TAG" --json assets --jq '.assets[].browser_download_url'

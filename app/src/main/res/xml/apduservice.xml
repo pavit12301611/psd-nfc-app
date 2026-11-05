@@ -5,9 +5,11 @@
     <aid-group
         android:category="other"
         android:description="@string/aid_group_desc">
+        <!-- NFC Forum NDEF Type 4 application -->
         <aid
             android:name="D2760000850101"
             android:description="@string/aid_ndef_desc" />
+        <!-- NFC Forum Type 4 / MIFARE DESFire ISO AID -->
         <aid
             android:name="D2760000850100"
             android:description="@string/aid_t4t_desc" />

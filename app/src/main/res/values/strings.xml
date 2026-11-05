@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">PSD NFC</string>
-    <string name="tile_label">NFC Transmit</string>
-    <string name="hce_service_desc">PSD NFC link transmitter</string>
-    <string name="aid_group_desc">PSD NFC NDEF emulation</string>
-    <string name="aid_ndef_desc">NDEF Type 4 Tag application</string>
-    <string name="aid_t4t_desc">NFC Forum Type 4 Tag</string>
+    <string name="app_name">Aakash ID Punch</string>
+    <string name="tile_label">Aakash Punch</string>
+    <string name="hce_service_desc">Aakash ID card emulation for the attendance reader</string>
+    <string name="aid_group_desc">Registered attendance / NDEF Type 4 AIDs</string>
+    <string name="aid_ndef_desc">NFC Forum NDEF Type 4 application</string>
+    <string name="aid_t4t_desc">NFC Forum Type 4 / DESFire ISO AID</string>
 </resources>

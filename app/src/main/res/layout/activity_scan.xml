@@ -8,42 +8,47 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="24dp">
-
-        <ImageView
-            android:layout_width="84dp"
-            android:layout_height="84dp"
-            android:layout_marginTop="24dp"
-            android:src="@drawable/ic_nfc" />
+        android:padding="20dp">
 
         <TextView
             android:id="@+id/scanStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:gravity="center"
-            android:text="Hold your ID card / NFC tag near the back of the phone"
+            android:text="Hold your Aakash ID card against the back of the phone"
             android:textColor="#FFFFFF"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/cardCompat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/tile_bg"
+            android:lineSpacingExtra="3dp"
+            android:padding="14dp"
+            android:text=""
+            android:textColor="#FFD166"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/scanDetail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:ellipsize="end"
-            android:maxLines="10"
-            android:textColor="#9E9E9E"
-            android:textSize="12sp"
-            android:visibility="gone" />
+            android:layout_marginTop="12dp"
+            android:background="@drawable/tile_bg"
+            android:lineSpacingExtra="3dp"
+            android:padding="14dp"
+            android:text="No card captured yet."
+            android:textColor="#B0B0B0"
+            android:textSize="12sp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="CARD NAME"
+            android:layout_marginTop="20dp"
+            android:text="CARD LABEL"
             android:textColor="#9E9E9E"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -54,128 +59,129 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:background="@drawable/input_bg"
-            android:hint="e.g. Office ID, College ID, Gym card"
+            android:hint="e.g. My Aakash ID card"
             android:inputType="text"
             android:padding="14dp"
             android:singleLine="true"
             android:textColor="#FFFFFF"
             android:textColorHint="#666666"
-            android:textSize="15sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="PHOTO"
-            android:textColor="#9E9E9E"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <ImageView
-            android:id="@+id/photoPreview"
-            android:layout_width="140dp"
-            android:layout_height="140dp"
-            android:layout_marginTop="8dp"
-            android:background="#000000"
-            android:scaleType="fitCenter"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/btnPickPhoto"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/btn_ghost"
-            android:text="+ ADD PHOTO"
-            android:textAllCaps="true"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/btnRemovePhoto"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/btn_ghost"
-            android:text="REMOVE PHOTO"
-            android:textAllCaps="true"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp"
-            android:visibility="gone" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="CUSTOM FIELDS"
-            android:textColor="#9E9E9E"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:id="@+id/fieldsContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-
-        <Button
-            android:id="@+id/btnAddField"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/btn_ghost"
-            android:text="+ ADD FIELD"
-            android:textAllCaps="true"
-            android:textColor="#FFFFFF"
             android:textSize="14sp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="OPEN LINK (OPTIONAL)"
+            android:layout_marginTop="18dp"
+            android:text="STUDENT ID (OPTIONAL)"
             android:textColor="#9E9E9E"
             android:textSize="12sp"
             android:textStyle="bold" />
 
         <EditText
-            android:id="@+id/inputOpenLink"
+            android:id="@+id/inputStudentId"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:background="@drawable/input_bg"
-            android:hint="Link that opens on the other phone (e.g. your business site)"
-            android:inputType="textUri"
+            android:hint="Your Aakash student / roll number"
+            android:inputType="text"
             android:padding="14dp"
             android:singleLine="true"
             android:textColor="#FFFFFF"
             android:textColorHint="#666666"
-            android:textSize="15sp" />
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="EXTRA AIDs (ADVANCED, ONE PER LINE)"
+            android:textColor="#9E9E9E"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/inputAids"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/input_bg"
+            android:gravity="top"
+            android:hint="D2760000850101&#10;A0000002471001"
+            android:inputType="textMultiLine"
+            android:minLines="2"
+            android:padding="14dp"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#666666"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="APDU RULES (ADVANCED — FROM A READER TRACE)"
+            android:textColor="#9E9E9E"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/rulesView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/tile_bg"
+            android:lineSpacingExtra="2dp"
+            android:padding="12dp"
+            android:text="No custom APDU rules."
+            android:textColor="#B0B0B0"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnAddRule"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_ghost"
+            android:text="+ ADD APDU RULE"
+            android:textAllCaps="true"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnClearRules"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_ghost"
+            android:text="CLEAR RULES"
+            android:textAllCaps="true"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
 
         <Button
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_marginTop="28dp"
+            android:layout_height="52dp"
+            android:layout_marginTop="22dp"
             android:background="@drawable/btn_white"
-            android:text="SAVE &amp; DUPLICATE"
+            android:text="SAVE CARD &amp; ARM PUNCH MODE"
             android:textAllCaps="true"
             android:textColor="#000000"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:visibility="gone" />
 
         <Button
-            android:id="@+id/btnAgain"
+            android:id="@+id/btnRescan"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="12dp"
+            android:layout_height="46dp"
+            android:layout_marginTop="10dp"
             android:layout_marginBottom="24dp"
             android:background="@drawable/btn_ghost"
             android:text="SCAN AGAIN"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:visibility="gone" />
+
     </LinearLayout>
 </ScrollView>

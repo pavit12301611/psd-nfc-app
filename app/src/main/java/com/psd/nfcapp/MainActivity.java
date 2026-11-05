@@ -2,408 +2,160 @@ package com.psd.nfcapp;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.graphics.Bitmap;
-import android.nfc.NdefMessage;
-import android.nfc.NfcAdapter;
-import android.nfc.Tag;
-import android.nfc.tech.Ndef;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextUtils;
-import android.text.style.ForegroundColorSpan;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.GridView;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
 
-/** Home screen: black tile grid of saved NFCs. Tap = arm & transmit, long-press = edit. */
+/** Home screen: one card, punch mode, and an honest compatibility status. */
 public class MainActivity extends Activity {
-    private NfcAdapter nfc;
-    private VaultStore store;
-    private List<NfcItem> items;
-    private TileAdapter adapter;
-    private TextView empty;
+    private CardStore store;
+
+    private TextView armedStatus;
+    private TextView cardSummary;
+    private TextView compatText;
+    private TextView hceStatus;
+    private TextView logPreview;
+    private Button btnPunch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        store = new VaultStore(this);
-        nfc = NfcAdapter.getDefaultAdapter(this);
+        store = new CardStore(this);
 
-        GridView grid = findViewById(R.id.grid);
-        empty = findViewById(R.id.empty);
-        adapter = new TileAdapter();
-        grid.setAdapter(adapter);
+        armedStatus = findViewById(R.id.armedStatus);
+        cardSummary = findViewById(R.id.cardSummary);
+        compatText = findViewById(R.id.compatText);
+        hceStatus = findViewById(R.id.hceStatus);
+        logPreview = findViewById(R.id.logPreview);
+        btnPunch = findViewById(R.id.btnPunch);
 
-        grid.setOnItemClickListener((parent, view, position, id) -> {
-            NfcItem it = items.get(position);
-            HceService.setArmed(this, it.id);
-            Toast.makeText(this, "Armed & transmitting: " + shortText(it), Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(this, TransmitActivity.class));
+        findViewById(R.id.btnRegister).setOnClickListener(v ->
+                startActivity(new Intent(this, RegisterActivity.class)));
+        findViewById(R.id.btnEdit).setOnClickListener(v -> {
+            CardProfile p = store.loadProfile();
+            Intent i = new Intent(this, RegisterActivity.class);
+            if (p != null) i.putExtra(RegisterActivity.EXTRA_EDIT, true);
+            startActivity(i);
         });
-        grid.setOnItemLongClickListener((parent, view, position, id) -> {
-            showItemDialog(items.get(position));
-            return true;
+        btnPunch.setOnClickListener(v -> togglePunch());
+        findViewById(R.id.btnDiagnostics).setOnClickListener(v ->
+                startActivity(new Intent(this, PunchActivity.class)));
+        findViewById(R.id.btnClearLog).setOnClickListener(v -> {
+            store.clearLog();
+            render(store.loadProfile());
         });
-
-        Button add = findViewById(R.id.btnAdd);
-        add.setOnClickListener(v -> startActivity(new Intent(this, ScanActivity.class)));
-
-        if (nfc == null) {
-            Toast.makeText(this, "NFC is not available on this device", Toast.LENGTH_LONG).show();
-        }
-        handleIntent(getIntent());
-        showFirstRunHelp();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        HceService.refresh(this);
-        reload();
-        if (nfc != null) enableDispatch();
+        CardProfile p = store.loadProfile();
+        HceRegistrar.sync(this, p);
+        HceRegistrar.setPreferred(this, true);
+        render(p);
+        showFirstRunHelp();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (nfc != null) nfc.disableForegroundDispatch(this);
+        HceRegistrar.setPreferred(this, false);
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        setIntent(intent);
-        handleIntent(intent);
-    }
+    private void render(CardProfile p) {
+        boolean armed = store.isArmed();
+        armedStatus.setText(armed ? "● PUNCH MODE ARMED" : "○ PUNCH MODE OFF");
+        armedStatus.setTextColor(armed ? 0xFF7CFC00 : 0xFF9E9E9E);
 
-    private void handleIntent(Intent intent) {
-        if (intent == null) return;
-        String action = intent.getAction();
-        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
-            Parcelable[] raw;
-            if (Build.VERSION.SDK_INT >= 33) {
-                raw = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES, Parcelable.class);
-            } else {
-                raw = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
-            }
-            if (raw != null && raw.length > 0 && raw[0] instanceof NdefMessage) {
-                NdefMessage msg = (NdefMessage) raw[0];
-                String uri = NfcUtils.firstUri(msg);
-                if (uri != null) {
-                    showReceivedLinkDialog(uri);
-                } else {
-                    String desc = NfcUtils.describe(msg);
-                    if (!desc.isEmpty()) {
-                        // Check if it's an Aakash branch punch payload
-                        if (desc.startsWith("Aakash Branch Punch:")) {
-                            NfcItem punch = new NfcItem();
-                            punch.kind = NfcItem.KIND_PUNCH;
-                            punch.payload = desc.substring(20).trim();
-                            punch.createdAt = System.currentTimeMillis();
-                            store.save(punch);
-                            reload();
-                            showPunchDialog(punch);
-                        } else {
-                            Toast.makeText(this, "Received via NFC: " + desc, Toast.LENGTH_LONG).show();
-                        }
-                    }
-                }
-            }
-        } else if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)
-                || NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
-            Tag tag;
-            if (Build.VERSION.SDK_INT >= 33) {
-                tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag.class);
-            } else {
-                tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            }
-            if (tag != null) {
-                String idHex = NfcUtils.bytesToHex(tag.getId());
-                String content = null;
-                try {
-                    Ndef ndef = Ndef.get(tag);
-                    if (ndef != null) {
-                        ndef.connect();
-                        NdefMessage m = ndef.getNdefMessage();
-                        if (m != null) {
-                            String u = NfcUtils.firstUri(m);
-                            content = u != null ? u : NfcUtils.describe(m);
-                        }
-                        ndef.close();
-                    }
-                } catch (Exception ignored) {
-                }
-                if (content != null && content.startsWith("http")) {
-                    showReceivedLinkDialog(content);
-                } else if (content != null && !content.isEmpty()) {
-                    // Aakash branch punch detection from tag content
-                    if (content.contains("AAKASH_BRANCH_PUNCH")) {
-                        NfcItem punch = new NfcItem();
-                        punch.kind = NfcItem.KIND_PUNCH;
-                        punch.payload = "Aakash Branch Punch: " + content;
-                        punch.tagIdHex = idHex;
-                        punch.createdAt = System.currentTimeMillis();
-                        store.save(punch);
-                        reload();
-                        showPunchDialog(punch);
-                    } else {
-                        Toast.makeText(this, "Received via NFC: " + content, Toast.LENGTH_LONG).show();
-                    }
-                } else {
-                    // Aakash branch punch optimization: check if tag matches Aakash branch pattern
-                    if (idHex != null && idHex.startsWith("AAKASH")) {
-                        NfcItem punch = new NfcItem();
-                        punch.kind = NfcItem.KIND_PUNCH;
-                        punch.payload = "Aakash Branch Punch: Tag " + idHex;
-                        punch.tagIdHex = idHex;
-                        punch.createdAt = System.currentTimeMillis();
-                        store.save(punch);
-                        reload();
-                        showPunchDialog(punch);
-                    } else {
-                        Toast.makeText(this, "NFC tag detected — ID " + idHex, Toast.LENGTH_LONG).show();
-                    }
-                }
-            }
-        }
-    }
-
-    private void enableDispatch() {
-        Intent intent = new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent pi = PendingIntent.getActivity(this, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        IntentFilter ndef = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
-        try {
-            ndef.addDataScheme("http");
-            ndef.addDataScheme("https");
-        } catch (Exception ignored) {
-        }
-        IntentFilter tech = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
-        IntentFilter tag = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
-        nfc.enableForegroundDispatch(this, pi, new IntentFilter[]{ndef, tech, tag}, NfcTech.techLists());
-    }
-
-    private void reload() {
-        items = store.loadAll();
-        adapter.notifyDataSetChanged();
-        empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-        TextView banner = findViewById(R.id.armedBanner);
-        String armedId = HceService.getArmedId();
-        NfcItem armedItem = armedId == null ? null : store.get(armedId);
-        if (armedItem != null) {
-            // Special banner for Aakash branch punch
-            if (NfcItem.KIND_PUNCH.equals(armedItem.kind)) {
-                banner.setText("● AAKASH BRANCH PUNCH ARMED: " + shortText(armedItem));
-                banner.setBackgroundColor(0xFF4CAF50); // Green for attendance
-            } else {
-                banner.setText("● ARMED & TRANSMITTING: " + shortText(armedItem));
-                banner.setBackgroundColor(0xFF000000); // Default black
-            }
-            banner.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
-            banner.setVisibility(View.VISIBLE);
+        if (p == null) {
+            cardSummary.setText("No Aakash ID card registered.\n\nTap REGISTER / REPLACE CARD "
+                    + "and hold your physical card against the back of the phone.");
+            compatText.setText("Compatibility: unknown until a card is registered.");
+            compatText.setTextColor(0xFF9E9E9E);
+            btnPunch.setEnabled(false);
+            btnPunch.setText("START PUNCH MODE");
         } else {
-            banner.setText("");
-            banner.setBackgroundColor(0xFF000000);
-            banner.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0));
-            banner.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0));
-            banner.setVisibility(View.GONE);
+            cardSummary.setText("Card: " + p.displayName()
+                    + (TextUtils.isEmpty(p.studentId) ? "" : "\nStudent ID: " + p.studentId)
+                    + "\nUID: " + (TextUtils.isEmpty(p.uidHex) ? "unknown" : p.uidHex)
+                    + "\nTech: " + p.techList
+                    + "\nMode: " + p.modeLabel()
+                    + "\nAIDs: " + p.aidListText()
+                    + "\nAPDU rules: " + p.rules.size());
+            compatText.setText(p.compatibilityText());
+            compatText.setTextColor(p.canEmulate() ? 0xFFFFD166 : 0xFFFF6B6B);
+            btnPunch.setEnabled(true);
+            btnPunch.setText(armed ? "STOP PUNCH MODE" : "START PUNCH MODE");
         }
-    }
 
-    private void showReceivedLinkDialog(String uri) {
-        new AlertDialog.Builder(this)
-                .setTitle("📲 NFC link received")
-                .setMessage(uri)
-                .setPositiveButton("Open link", (d, w) -> {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri)));
-                    } catch (Exception ignored) {
-                    }
-                })
-                .setNegativeButton("Close", null)
-                .show();
-    }
-
-    private void showPunchDialog(NfcItem it) {
-        // Aakash branch ID card punch optimization
-        new AlertDialog.Builder(this)
-                .setTitle("✅ Attendance Punched: Aakash Branch")
-                .setMessage("Card Name: " + (it.cardName == null ? "Unknown" : it.cardName) +
-                            "\nTag ID: " + (it.tagIdHex == null ? "" : it.tagIdHex) +
-                            "\nTime: " + (it.payload == null ? "" : it.payload))
-                .setPositiveButton("View Details", (d, w) -> {
-                    showItemDialog(it);
-                })
-                .setNegativeButton("Close", null)
-                .show();
-    }
-
-    private void showFirstRunHelp() {
-        android.content.SharedPreferences ui = getSharedPreferences("psd_nfc_ui", MODE_PRIVATE);
-        if (ui.getBoolean("seen_help", false)) return;
-        ui.edit().putBoolean("seen_help", true).apply();
-        new AlertDialog.Builder(this)
-                .setTitle("Phone-to-phone transmit kaise kare")
-                .setMessage("1. Is phone pe koi tile tap karo → ARMED ho jayega (ya Quick Settings ka 'NFC Transmit' tile ON karo).\n\n"
-                        + "2. Dono phones pe NFC ON + screen ON rakho (Android OS ki wajah se screen ON zaroori hai — koi app ise bypass nahi kar sakta).\n\n"
-                        + "3. Dono phones ke back touch karo — antenna TOP-middle mein hota hai — aur 3 second tak hold rakho (jaldi hatane se read miss ho jata hai).\n\n"
-                        + "4. Doosre phone pe link seedha browser mein khul jayega (har phone mein browser hota hai). Agar wahan PSD NFC hai toh app khulega aur 'NFC link received' dialog dikhega.\n\n"
-                        + "5. Aakash Branch Punch: ID card tap karo → attendance automatically punch ho jayega (payload timestamp save hoga).")
-                .setPositiveButton("Got it", null)
-                .show();
-    }
-
-    private void showItemDialog(NfcItem it) {
-        String[] options;
-        if (NfcItem.KIND_PUNCH.equals(it.kind)) {
-            options = new String[]{
-                    "▶  View Punch Details",
-                    "✏️  Edit Punch Info",
-                    "🏷  Edit tags",
-                    "🗑  Delete"
-            };
+        hceStatus.setText(HceRegistrar.statusText(this, store));
+        List<String> log = store.getLog();
+        if (log.isEmpty()) {
+            logPreview.setText("No reader APDUs yet. If you tap the attendance reader and this "
+                    + "stays empty, the reader is not opening an HCE session.");
         } else {
-            options = new String[]{
-                    "▶  Arm & transmit",
-                    "✏️  Edit ID card (name, photo, fields)",
-                    "🏷  Edit tags",
-                    "🗑  Delete"
-            };
+            int from = Math.max(0, log.size() - 8);
+            logPreview.setText(TextUtils.join("\n", log.subList(from, log.size())));
         }
-        new AlertDialog.Builder(this)
-                .setTitle(shortText(it))
-                .setItems(options, (d, which) -> {
-                    if (which == 0) {
-                        if (NfcItem.KIND_PUNCH.equals(it.kind)) {
-                            // Punch details view
-                            showPunchDialog(it);
-                        } else {
-                            HceService.setArmed(this, it.id);
-                            startActivity(new Intent(this, TransmitActivity.class));
-                        }
-                    } else if (which == 1) {
-                        Intent edit = new Intent(this, ScanActivity.class);
-                        edit.putExtra(ScanActivity.EXTRA_ITEM_ID, it.id);
-                        startActivity(edit);
-                    } else if (which == 2) {
-                        showEditTags(it);
-                    } else {
-                        store.delete(it.id);
-                        HceService.refresh(this);
-                        reload();
-                    }
-                })
-                .show();
     }
 
-    private void showEditTags(NfcItem it) {
-        final EditText input = new EditText(this);
-        input.setBackgroundResource(R.drawable.input_bg);
-        int pad = (int) (16 * getResources().getDisplayMetrics().density);
-        input.setPadding(pad, pad, pad, pad);
-        input.setTextColor(0xFFFFFFFF);
-        input.setHintTextColor(0xFF777777);
-        input.setSingleLine(true);
-        input.setText(TextUtils.join(", ", it.tags));
+    private void togglePunch() {
+        CardProfile p = store.loadProfile();
+        if (p == null) return;
+        if (store.isArmed()) {
+            setArmedInternal(false, p);
+        } else if (!p.canEmulate()) {
+            showHardwareWarning(p);
+        } else {
+            setArmedInternal(true, p);
+        }
+    }
+
+    private void setArmedInternal(boolean on, CardProfile p) {
+        store.setArmed(on);
+        HceRegistrar.sync(this, p);
+        render(p);
+        Toast.makeText(this, on
+                ? "Punch mode armed. Keep the screen on and hold the phone to the reader."
+                : "Punch mode stopped", Toast.LENGTH_LONG).show();
+    }
+
+    private void showHardwareWarning(CardProfile p) {
         new AlertDialog.Builder(this)
-                .setTitle("Tags (comma separated)")
-                .setView(input)
-                .setPositiveButton("Save", (d, w) -> {
-                    it.tags.clear();
-                    for (String s : input.getText().toString().split(",")) {
-                        String t = s.trim();
-                        if (!t.isEmpty() && !it.tags.contains(t)) it.tags.add(t);
-                    }
-                    store.save(it);
-                    reload();
-                })
+                .setTitle("Android HCE cannot clone this card")
+                .setMessage(p.compatibilityText()
+                        + "\n\nYou can still arm punch mode to capture a diagnostic APDU log, "
+                        + "but the reader will not accept this phone as your card. Use the physical "
+                        + "card, or ask the institute to enroll a phone-compatible credential.")
+                .setPositiveButton("Arm for diagnostics", (d, w) -> setArmedInternal(true, p))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private String shortText(NfcItem it) {
-        String p = it.displayName();
-        // For Aakash branch punch, keep full payload for visibility
-        if (NfcItem.KIND_PUNCH.equals(it.kind)) {
-            return p.length() > 60 ? p.substring(0, 60) + "…" : p;
-        }
-        return p.length() > 40 ? p.substring(0, 40) + "…" : p;
-    }
-
-    private class TileAdapter extends BaseAdapter {
-        @Override
-        public int getCount() {
-            return items == null ? 0 : items.size();
-        }
-
-        @Override
-        public Object getItem(int position) {
-            return items.get(position);
-        }
-
-        @Override
-        public long getItemId(int position) {
-            return position;
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View v = convertView;
-            if (v == null) {
-                v = LayoutInflater.from(MainActivity.this).inflate(R.layout.item_tile, parent, false);
-            }
-            NfcItem it = items.get(position);
-            TextView payload = v.findViewById(R.id.tilePayload);
-            TextView tags = v.findViewById(R.id.tileTags);
-            TextView armed = v.findViewById(R.id.tileArmed);
-            ImageView photo = v.findViewById(R.id.tilePhoto);
-            payload.setText(shortText(it));
-
-            Bitmap bmp = PhotoUtil.decode(it.photoBase64, 800);
-            if (bmp != null) {
-                photo.setImageBitmap(bmp);
-                photo.setVisibility(View.VISIBLE);
-                photo.setOnClickListener(pv -> PhotoUtil.showFullScreen(MainActivity.this, it.photoBase64));
-            } else {
-                photo.setImageDrawable(null);
-                photo.setVisibility(View.GONE);
-                photo.setOnClickListener(null);
-            }
-
-            SpannableStringBuilder sb = new SpannableStringBuilder();
-            for (int i = 0; i < it.tags.size(); i++) {
-                if (i > 0) sb.append("  ");
-                int start = sb.length();
-                sb.append("#").append(it.tags.get(i));
-                sb.setSpan(new ForegroundColorSpan(NfcUtils.colorForTag(it.tags.get(i))),
-                        start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-            tags.setText(sb);
-            tags.setVisibility(sb.length() == 0 ? View.GONE : View.VISIBLE);
-
-            boolean isArmed = it.id != null && it.id.equals(HceService.getArmedId());
-            armed.setVisibility(isArmed ? View.VISIBLE : View.GONE);
-            return v;
-        }
+    private void showFirstRunHelp() {
+        android.content.SharedPreferences ui = getSharedPreferences("aakash_ui", MODE_PRIVATE);
+        if (ui.getBoolean("seen_help_v2", false)) return;
+        ui.edit().putBoolean("seen_help_v2", true).apply();
+        new AlertDialog.Builder(this)
+                .setTitle("How this app actually works")
+                .setMessage("1. Register YOUR OWN Aakash ID card once.\n\n"
+                        + "2. Read the compatibility line carefully. Android HCE can only emulate "
+                        + "ISO-DEP/AID or NFC Forum Type 4 NDEF cards. It CANNOT clone a fixed UID, "
+                        + "MIFARE Classic, MIFARE Ultralight, 125 kHz RFID, barcode, or QR card.\n\n"
+                        + "3. If compatible, start Punch Mode, keep NFC ON + screen ON, and hold "
+                        + "the phone's NFC antenna to the attendance reader.\n\n"
+                        + "4. Open PUNCH DIAGNOSTICS. If the APDU log stays empty, the reader never "
+                        + "spoke to Android HCE. If APDUs appear but the reader rejects them, copy "
+                        + "the diagnostics and add the reader's AID / APDU responses.\n\n"
+                        + "5. This app does not record attendance and does not talk to any server; "
+                        + "only the institute's reader records a punch. Use it only where permitted.")
+                .setPositiveButton("Got it", null)
+                .show();
     }
 }

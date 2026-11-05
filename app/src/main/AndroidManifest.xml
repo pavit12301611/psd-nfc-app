@@ -2,8 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.NFC" />
+
     <uses-feature
         android:name="android.hardware.nfc"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.nfc.hce"
         android:required="true" />
 
     <application
@@ -21,36 +25,16 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Auto-open when this phone receives an NFC link from another phone -->
-            <intent-filter>
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="http" />
-                <data android:scheme="https" />
-            </intent-filter>
-            <!-- Also catch raw tags (phones that have this app installed) -->
-            <intent-filter>
-                <action android:name="android.nfc.action.TECH_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.nfc.action.TAG_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <meta-data
-                android:name="android.nfc.action.TECH_DISCOVERED"
-                android:resource="@xml/nfc_techs" />
         </activity>
 
         <activity
-            android:name=".ScanActivity"
+            android:name=".RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".TransmitActivity"
+            android:name=".PunchActivity"
             android:exported="false" />
 
-        <!-- Host Card Emulation: makes THIS phone behave like an NFC tag so any
-             other NFC phone can read the armed link / duplicated signal. -->
+        <!-- The only NFC output: ISO-DEP / AID card emulation for the attendance reader. -->
         <service
             android:name=".HceService"
             android:exported="true"
@@ -63,7 +47,6 @@
                 android:resource="@xml/apduservice" />
         </service>
 
-        <!-- Quick settings tile: one tap keeps NFC transmission armed (always active) -->
         <service
             android:name=".TransmitTileService"
             android:exported="true"

@@ -1,83 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="PSD NFC"
-        android:textColor="#FFFFFF"
-        android:textSize="30sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="6dp"
-        android:text="Your ID cards — tap one to arm &amp; transmit. Long-press to edit name, photo or fields."
-        android:textColor="#9E9E9E"
-        android:textSize="13sp" />
-
-    <TextView
-        android:id="@+id/armedBanner"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="6dp"
-        android:text="● ARMED"
-        android:textColor="#7CFC00"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/hintTransmit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:text="Transmit: dono phones pe NFC ON + screen ON → backs touch karo (antenna upar-middle). Koi limit nahi hai — koi bhi NFC phone read kar lega."
-        android:textColor="#666666"
-        android:textSize="11sp" />
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <GridView
-            android:id="@+id/grid"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:horizontalSpacing="12dp"
-            android:numColumns="2"
-            android:stretchMode="columnWidth"
-            android:verticalSpacing="12dp" />
+        android:orientation="vertical"
+        android:padding="20dp">
 
         <TextView
-            android:id="@+id/empty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:text="No NFC tiles yet.\nTap “+ ADD ID CARD” below."
-            android:textColor="#777777"
-            android:textSize="15sp"
-            android:visibility="gone" />
-    </FrameLayout>
+            android:text="AAKASH ID PUNCH"
+            android:textColor="#FFFFFF"
+            android:textSize="27sp"
+            android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/btnAdd"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_marginTop="14dp"
-        android:background="@drawable/btn_white"
-        android:text="+  ADD ID CARD"
-        android:textAllCaps="true"
-        android:textColor="#000000"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-</LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="14dp"
+            android:text="One card. Attendance reader only. No links, no phone-to-phone sharing."
+            android:textColor="#9E9E9E"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/armedStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/tile_bg"
+            android:padding="14dp"
+            android:text="○ PUNCH MODE OFF"
+            android:textColor="#9E9E9E"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/cardSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/tile_bg"
+            android:lineSpacingExtra="3dp"
+            android:padding="14dp"
+            android:text="No Aakash ID card registered."
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/compatText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/tile_bg"
+            android:lineSpacingExtra="3dp"
+            android:padding="14dp"
+            android:text="Compatibility: unknown until a card is registered."
+            android:textColor="#9E9E9E"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/hceStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:lineSpacingExtra="3dp"
+            android:text="NFC: --  |  HCE: --"
+            android:textColor="#8AD8FF"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnRegister"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@drawable/btn_white"
+            android:text="+  REGISTER / REPLACE CARD"
+            android:textAllCaps="true"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnEdit"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_ghost"
+            android:text="EDIT CARD / ADVANCED APDU RULES"
+            android:textAllCaps="true"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnPunch"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_ghost"
+            android:text="START PUNCH MODE"
+            android:textAllCaps="true"
+            android:textColor="#7CFC00"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnDiagnostics"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_ghost"
+            android:text="PUNCH DIAGNOSTICS / READER LOG"
+            android:textAllCaps="true"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="LAST READER ACTIVITY"
+            android:textColor="#9E9E9E"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/logPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/tile_bg"
+            android:lineSpacingExtra="2dp"
+            android:minLines="3"
+            android:padding="12dp"
+            android:text="No reader APDUs yet."
+            android:textColor="#B0B0B0"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnClearLog"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/btn_ghost"
+            android:text="CLEAR LOG"
+            android:textAllCaps="true"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</ScrollView>
