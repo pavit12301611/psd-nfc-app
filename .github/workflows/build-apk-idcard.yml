@@ -2,7 +2,7 @@ name: Build PSD NFC ID Card APK
 
 on:
   push:
-    branches: [arena/783b9cdb-psd-nfc-app, arena/a1e98c4d-psd-nfc-app, arena/29ec6692-psd-nfc-app, arena/c756d6c1-psd-nfc-app-fix]
+    branches: [main, arena/c756d6c1-psd-nfc-app]
   workflow_dispatch:
 
 permissions:
@@ -63,14 +63,17 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
-      - name: Publish GitHub Release with APK asset (new tag, v1.0.0 is left untouched)
+      - name: Publish GitHub Release with APK asset (v1.3.0 — Aakash Branch punch)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=v1.1.1
+          TAG=v1.3.0
           APK=app/build/outputs/apk/release/app-release.apk
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" \
-            --title "PSD NFC v1.1.1 — ID Card photo full view" \
-            --notes "ID Card update: card name, photo (full, tap to view full screen on tiles and transmit screen) and custom fields. Direct APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
+            --title "PSD NFC v1.3.0 — Aakash Branch ID Card Punch" \
+            --notes "Optimized for Aakash branch ID card attendance punching"
           gh release upload "$TAG" "$APK" --clobber
-          gh release view "$TAG" --json assets --jq '.assets[].browser_download_url'
+          gh release edit "$TAG" \
+            --title "PSD NFC v1.3.0 — Aakash Branch ID Card Punch" \
+            --notes "ID Card optimized for the Aakash branch: attendance punch via app (green ARMED banner, punch confirmation dialog, AAKASH tag auto-detect, NDEF punch payload 'application/x-psd-aakash-punch'). Direct APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
+          gh release view "$TAG" --json assets --jq '.assets[].url'
