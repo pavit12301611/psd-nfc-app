@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.psd.nfcapp'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.psd.nfcapp"
+        minSdk 24
+        targetSdk 34
+        versionCode 6
+        versionName "1.5"
+    }
+
+    signingConfigs {
+        release {
+            // Prefer env-provided keystore; fall back to the one committed in signing/
+            def ksFile = System.getenv('KEYSTORE_FILE')
+            def fallback = new File(rootDir, 'signing/release-keystore.p12')
+            if (ksFile != null && new File(ksFile).exists()) {
+                storeFile file(ksFile)
+            } else if (fallback.exists()) {
+                storeFile fallback
+            }
+            if (storeFile != null) {
+                storePassword System.getenv('KEYSTORE_PASSWORD') ?: 'psdNfc2026'
+                keyAlias System.getenv('KEY_ALIAS') ?: 'psd'
+                keyPassword System.getenv('KEY_PASSWORD') ?: System.getenv('KEYSTORE_PASSWORD') ?: 'psdNfc2026'
+                storeType 'PKCS12'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (signingConfigs.release.storeFile != null) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+    }
+}
