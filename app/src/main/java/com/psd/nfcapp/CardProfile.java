@@ -241,8 +241,9 @@ public class CardProfile {
                     + "A reader may check only the UID, or authenticate sector data; both require the "
                     + "original UID/keys. HCE here is diagnostics only. Official Aakash pages say "
                     + "attendance can be pulled from Barcode / RFID / biometric machines, but no "
-                    + "public source names this branch's reader; for your card NFC punching was "
-                    + "confirmed, so the printed barcode is not used as a credential by this app.";
+                    + "public source names this branch's reader. A later real-reader tap produced a "
+                    + "beep but no attendance record and no SMS; a beep is NOT proof of a successful "
+                    + "punch. The printed barcode is still not used as a credential by this app.";
         }
         if (MODE_MIFARE_ULTRALIGHT.equals(mode)) {
             return "NOT EMULATABLE on stock Android: MIFARE Ultralight / Type 2 is a low-level "

@@ -237,8 +237,8 @@ public class MainActivity extends Activity {
 
     private void showFirstRunHelp() {
         android.content.SharedPreferences ui = getSharedPreferences("aakash_ui", MODE_PRIVATE);
-        if (ui.getBoolean("seen_help_v6", false)) return;
-        ui.edit().putBoolean("seen_help_v6", true).apply();
+        if (ui.getBoolean("seen_help_v7", false)) return;
+        ui.edit().putBoolean("seen_help_v7", true).apply();
         new AlertDialog.Builder(this)
                 .setTitle("Saharanpur Aakash ID card — MIFARE Classic")
                 .setMessage("1. Register YOUR OWN Aakash ID card once. Your actual card scans as "
@@ -246,10 +246,12 @@ public class MainActivity extends Activity {
                         + "with no NDEF text.\n\n"
                         + "2. Official Aakash 'Why Aakash' pages say daily attendance can be pulled "
                         + "from Barcode / RFID / biometric machines, so the institute supports "
-                        + "multiple capture types. Your card has a printed barcode too, but you "
-                        + "confirmed it punches over NFC; for THIS card the barcode / Roll No / "
-                        + "User ID / Branch Term are visual/admin or alternate identifiers, and the "
-                        + "app does NOT use the printed barcode as a credential.\n\n"
+                        + "multiple capture types. Your card has a printed barcode too, but the "
+                        + "captured NFC credential is the embedded MIFARE Classic chip. A later "
+                        + "real-reader tap produced only a beep, with no attendance record and no "
+                        + "SMS; backend success is NOT confirmed. The barcode / Roll No / User ID / "
+                        + "Branch Term are visual/admin or alternate identifiers, and the app does "
+                        + "NOT use the printed barcode as a credential.\n\n"
                         + "3. Stock Android HCE CANNOT emulate MIFARE Classic: it cannot set the fixed "
                         + "UID, ATQA/SAK or perform Crypto1 sector authentication. The app captures "
                         + "the full sector dump and key map with common default keys.\n\n"
@@ -262,9 +264,10 @@ public class MainActivity extends Activity {
                         + "No public source names this branch's reader model or protocol. Since "
                         + "this card has no NDEF text, the app shows no guessed AAKASH / PSID / "
                         + "branch prefix field and stores no guessed credential.\n\n"
-                        + "6. This app does not record attendance. MIFARE_VERIFY_OK is not proof the "
-                        + "institute reader accepted the punch. Use only for your own card, with "
-                        + "institute permission.")
+                        + "6. This app does not record attendance. A reader beep, "
+                        + "MIFARE_VERIFY_OK and 9000 APDUs are NOT proof the institute reader "
+                        + "accepted the punch. Only the institute backend / attendance record "
+                        + "counts. Use only for your own card, with institute permission.")
                 .setPositiveButton("Got it", null)
                 .show();
     }

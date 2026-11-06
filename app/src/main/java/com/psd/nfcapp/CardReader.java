@@ -531,6 +531,10 @@ public final class CardReader {
         p.addNote("Official Aakash 'Why Aakash' pages say daily attendance can be pulled from "
                 + "Barcode / RFID / biometric machines. That is an institution-level capability, "
                 + "not proof of the Saharanpur reader or of this card's active protocol.");
+        p.addNote("Real-reader feedback: a tap produced a beep, but no attendance record and no "
+                + "parent SMS were observed. A beep is NOT proof of a successful punch: it may "
+                + "only mean the reader detected a 13.56 MHz tag / completed anti-collision, or "
+                + "emitted a rejection tone. Only institute backend confirmation counts.");
         boolean ndefCredentialFound = p.aakashNdefDetected
                 || !TextUtils.isEmpty(p.aakashId)
                 || !TextUtils.isEmpty(p.psidGuess)
@@ -551,9 +555,10 @@ public final class CardReader {
                     + "authorised external emulator is required to reproduce this UID.");
             p.addNote("The reader may check only the fixed UID, or authenticate one or more "
                     + "Crypto1 sectors. Stock Android HCE can do neither.");
-            p.addNote("Printed barcode, roll number and user ID are visual/admin identifiers; "
-                    + "the user confirmed this card punches over NFC, so the app does not use "
-                    + "the printed barcode as a credential.");
+            p.addNote("Printed barcode, roll number and user ID are visual/admin identifiers. "
+                    + "A reader beep was observed but backend attendance/SMS was not confirmed; "
+                    + "the app does not treat a beep as success and does not use the printed "
+                    + "barcode as a credential.");
             if (!p.mifareDumpComplete) {
                 p.addNote("Dump is incomplete. Use MIFARE Classic Tool or Proxmark to recover "
                         + "custom sector keys before attempting a clone.");

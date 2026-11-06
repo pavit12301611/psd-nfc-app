@@ -306,7 +306,8 @@ public class MifareMagicActivity extends Activity {
             if (mismatches == 0) {
                 setStatus("VERIFIED: UID " + uid + " and all data/access bytes match the original "
                         + dump.length + "-byte dump. This does NOT prove the institute reader "
-                        + "accepted the punch; test at the reader.", true);
+                        + "accepted the punch. A reader beep alone is also not success; check the "
+                        + "attendance record / SMS / backend. Test at the reader.", true);
                 store.appendLog("MIFARE_VERIFY_OK | UID " + uid + " | " + dump.length + " bytes");
             } else {
                 setStatus("VERIFY MISMATCH: " + mismatches + " byte/block mismatch(es). "

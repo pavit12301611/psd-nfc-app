@@ -86,10 +86,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=v3.1.2-mifare-saharanpur
+          TAG=v3.1.3-mifare-saharanpur
           APK=app/build/outputs/apk/release/app-release.apk
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" \
-            --title "Aakash Saharanpur ID v3.1.2 — remove guessed NDEF prefix leftover" \
-            --notes "Single-purpose Aakash Saharanpur ID tool. Real card: MIFARE Classic 1K / Crypto1, SAK 08, ATQA 0400, 16 sectors / 1024 bytes, no NDEF. v3.1.2 removes the v3.1.1 registration-screen leftover 'EXPECTED NDEF BRANCH PREFIX = AAKASH': the field is hidden for MIFARE Classic, the guessed default is gone, old profiles are sanitised, student/roll is label-only, and the Type-2 writer no longer fabricates AAKASH / PSID / student text without exact NDEF bytes. Keeps the full 16-sector dump + key map, Gen2/CUID magic-card writer, and official Barcode/RFID/biometric research. For this card NFC punching was confirmed; printed barcode is not a credential, no camera scanner path, no guessed Delhi / CC-028 code, no fake attendance dialog. Stock Android HCE remains diagnostics only; MIFARE_VERIFY_OK is not an attendance punch. APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
+            --title "Aakash Saharanpur ID v3.1.3 — beep is not an attendance punch" \
+            --notes "Single-purpose Aakash Saharanpur ID tool. Real card: MIFARE Classic 1K / Crypto1, SAK 08, ATQA 0400, 16 sectors / 1024 bytes, no NDEF. IMPORTANT CORRECTION: the user clarified that a real-reader tap produces a beep but no attendance record and no parent SMS. A beep is NOT proof of a successful punch; backend acceptance is unconfirmed. All earlier 'NFC punching was confirmed' wording is removed from compatibility text, notes, first-run help, registration dialog and magic-card verify message. Keeps full 16-sector dump + key map, Gen2/CUID magic-card writer, official Barcode/RFID/biometric research, no guessed AAKASH/PSID/branch prefix, no camera barcode scanner path, no fake attendance dialog. Stock Android HCE remains diagnostics only; a reader beep, MIFARE_VERIFY_OK and 9000 APDUs are not an attendance punch. Use only your own card with institute permission. APK: https://github.com/${{ github.repository }}/releases/download/$TAG/app-release.apk"
           gh release upload "$TAG" "$APK" --clobber
           gh release view "$TAG" --json assets --jq '.assets[].browser_download_url'

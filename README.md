@@ -1,4 +1,4 @@
-# Aakash Saharanpur ID — v3.1.2 (MIFARE Classic)
+# Aakash Saharanpur ID — v3.1.3 (MIFARE Classic)
 
 A single-purpose Android app for **your own Aakash Institute, Saharanpur ID card** and the institute's NFC attendance reader. It is not a link/photo/phone-to-phone sharing app, it does not use Android Beam, and it never shows a fake "Attendance Punched" dialog. Only the institute's reader can record attendance.
 
@@ -19,7 +19,7 @@ The original app was an NDEF **link transmitter** for two Android phones. It inv
 - Sector 0 was readable with the common default key `FFFFFFFFFFFF`.
 - Earlier v3.0 incorrectly assumed Type 2 / NTAG and showed a false `"Ultralight: NFC-A Type 2 (NfcA only)"` line because `NfcA` was present. v3.1 fixes that: `NfcA` alone is not Type 2, and MIFARE Classic takes priority.
 
-The user confirmed this card punches over **NFC**, including from the other side, so the printed barcode is **not the active credential for this card**. The card photos show a printed barcode, Roll No, User ID and Branch Term, plus the instruction "Entry in the classroom is strictly by ID Card"; those are visual/admin or alternate identifiers, not an NFC payload. Aakash's own admission/terms documents say entry to classes is only with the ID card [1](https://www.aakash.ac.in/sites/default/files/medical_acst_admission-form.pdf) [5](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/target_solutions/Updatd_Terms_and_Conditions_03_07_2023.pdf), without naming the reader technology. A deeper official-source check now shows the institute's attendance platform can ingest **Barcode, RFID and biometric machines** (§2.1), so "Aakash never uses barcode" would also be wrong. Public reports are branch/era dependent — one answers about **Allen** barcode attendance cards [2](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students), another says Aakash ID-card scans trigger parent SMS and explicitly caveats "might not be true for all the branches" [3](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash). For **your** Saharanpur card, the confirmed active path is the embedded MIFARE Classic NFC chip.
+A later real-reader test clarified an important point: **tapping produces a beep, but attendance is not registered and no parent SMS arrives**. A beep is **not** proof of a successful punch — it can mean only that the reader detected a 13.56 MHz tag / completed anti-collision, or that it emitted a rejection tone. Earlier "proper punch over NFC" wording was therefore too strong; the honest status is **reader detection observed, backend attendance NOT confirmed** (§2.2). The printed barcode is still **not used as a credential by this app**. The card photos show a printed barcode, Roll No, User ID and Branch Term, plus the instruction "Entry in the classroom is strictly by ID Card"; those are visual/admin or alternate identifiers, not an NFC payload. Aakash's own admission/terms documents say entry to classes is only with the ID card [1](https://www.aakash.ac.in/sites/default/files/medical_acst_admission-form.pdf) [5](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/target_solutions/Updatd_Terms_and_Conditions_03_07_2023.pdf), without naming the reader technology. A deeper official-source check shows the institute's attendance platform can ingest **Barcode, RFID and biometric machines** (§2.1), so "Aakash never uses barcode" would also be wrong. Public reports are branch/era dependent — one answers about **Allen** barcode attendance cards [2](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students), another says Aakash ID-card scans trigger parent SMS and explicitly caveats "might not be true for all the branches" [3](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash). For **your** Saharanpur card, the captured NFC credential is the embedded MIFARE Classic chip, but reader acceptance is unconfirmed.
 
 ### The hard protocol limit
 
@@ -52,13 +52,27 @@ So **no ordinary HCE code change can make the phone become this card**. The work
 | Official Saharanpur centre pages [16](https://centers.aakash.ac.in/aakash-institute-court-road-coaching-center-court-road-saharanpur-99263/Home) [17](https://www.aakash.ac.in/saharanpur-city) and AIATS centre PDF [18](https://dcx0p3on5z8dw.cloudfront.net/Aakash/s3fs-public/pdf_management_files/sm_sa/AIATS%20Center.pdf) | Court Road address; `CC-028` is an **AIATS exam-centre code**. | Any NFC/barcode reader model or card protocol. `CC-028` is not an NFC branch ID. |
 | Quora reports [22](https://www.quora.com/How-do-ALLEN-or-Aakash-track-attendance-of-students) [23](https://www.quora.com/Do-parents-get-notifications-when-students-are-absent-in-Aakash) | One answer describes **Allen** barcode attendance cards; another says Aakash ID-card scans trigger parent SMS but adds "might not be true for all the branches". | Official confirmation, current date, or Saharanpur-specific hardware. These are unverified and clearly branch / era dependent. |
 
-**Reconciling that with your card:** the card has **both** a printed 1D barcode **and** an embedded MIFARE Classic 1K chip. You explicitly tested NFC punching from either side, and the v3.1 app captured a complete 16-sector MIFARE Classic dump with no NDEF text / AAKASH string / 11-digit PSID. So for **this card at your reader**, the active credential path is **RFID / NFC (MIFARE Classic)**, not the printed barcode. The printed barcode may be a legacy number, an admin/visual identifier, or an alternate path used by centres with barcode machines. Aakash supporting barcode machines somewhere in its network does **not** override your own NFC test.
+**Reconciling that with your card:** the card has **both** a printed 1D barcode **and** an embedded MIFARE Classic 1K chip. The v3.1 app captured a complete 16-sector MIFARE Classic dump with no NDEF text / AAKASH string / 11-digit PSID. A later real-reader tap produced a **beep**, but attendance was **not** registered and no SMS arrived. So the captured NFC credential is the embedded MIFARE Classic chip, **but backend acceptance is NOT confirmed** — a beep is not a punch (§2.2). The printed barcode may be a legacy number, an admin/visual identifier, or an alternate path used by centres with barcode machines. Aakash supporting barcode machines somewhere in its network [26](https://www.aakash.ac.in/why-aakash) [27](https://dlp.aakash.ac.in/dlp-why-aakash) does **not** prove this branch uses barcode, and does not override the observed NFC tag detection.
 
-**Therefore:** do **not** build a camera barcode scanner path for this card, and do **not** hardcode the printed barcode / Roll No / User ID / Branch Term as credentials. Keep the full MIFARE Classic dump + Gen2/CUID magic-card path. For 100% confirmation, ask the centre office for the reader model, or observe the reader: a barcode scanner normally has a red laser / CCD window and you show the printed side; an RFID reader is a flat pad you tap. Hybrid readers can support both, but your test still proves NFC works here.
+**Therefore:** do **not** build a camera barcode scanner path for this card, and do **not** hardcode the printed barcode / Roll No / User ID / Branch Term as credentials. Keep the full MIFARE Classic dump + Gen2/CUID magic-card path as a compatibility attempt, **not** as a confirmed attendance solution. For 100% confirmation, ask the centre office for the reader model and check the actual attendance record; observe the reader too: a barcode scanner normally has a red laser / CCD window and you show the printed side, an RFID reader is a flat pad you tap. Hybrid readers can support both.
+
+### 2.2 Real-reader feedback: beep ≠ attendance (2026-11-06)
+
+The user clarified: on tapping, **a beep is heard, but attendance is not recorded and no parent SMS is sent**. A beep is **not** proof of a successful punch. It may mean only that the reader detected a 13.56 MHz tag and completed ISO 14443-3 anti-collision, that it emitted a generic "card present" or rejection tone, that it read a UID but rejected it against its allowlist / backend, or that a sector was authenticated but the transaction was not committed. Attendance could also be recorded in a system that is not immediately visible while the SMS notification is configured differently.
+
+Official Aakash pages say the platform can send daily/monthly attendance alerts to absentees and pull attendance from Barcode / RFID / biometric machines [26](https://www.aakash.ac.in/why-aakash) [27](https://dlp.aakash.ac.in/dlp-why-aakash); the 2025 prospectus describes SMS/Email alerts when a child arrives at a branch on time [30](https://d28cs5wqm3s0uy.cloudfront.net/AAKASH_V2/BrochureSection/pdf/Aakash_Medical_Engineering_Foundation_Prospectus_English_2025_Updated_2_1_1_1766082328507.pdf). So absence of SMS is consistent with either **"no backend registration"** or **"notification not configured for this event"**; combined with no visible attendance record, the only safe conclusion is **NOT CONFIRMED**.
+
+It is not yet established whether the beep test used the **original physical card**, **stock Android HCE**, a **written Gen2/CUID magic card**, or an **NTAG sticker**. Until that is known and a reader trace / backend confirmation exists, the app must not show "Attendance Punched" or infer success from a beep, `MIFARE_VERIFY_OK`, `9000`, or green CI.
+
+- **If phone HCE was used:** Android HCE presents a random UID and only ISO-DEP / ISO 7816-4 APDUs [1](https://developer.android.com/develop/connectivity/nfc/hce); it cannot reproduce MIFARE Classic Crypto1 or the fixed UID [3](https://stackoverflow.com/questions/48007948/how-to-simulate-mifare-classic-1k-card-with-android). The beep is just tag detection.
+- **If a written magic card was used:** `MIFARE_VERIFY_OK` only means the clone's UID/dump matches the app's captured bytes. The reader may additionally detect "Chinese magic" cards [10](https://lab401.com/blogs/academy/know-your-magic-cards), use diversified / SAM keys, write back a counter or last-punch state, require backend enrollment of the clone UID, or reject a card whose sector trailer / access bits were written incorrectly.
+- **If the original card was used:** reader/backend/centre mapping, session or time window, registered parent mobile number, or notification configuration may be wrong; the app cannot fix that.
+
+**Needed to debug:** which credential was tapped (original / phone / magic card / sticker), whether the original card ever produced attendance + SMS, whether `MIFARE_WRITE_OK` and `MIFARE_VERIFY_OK` appeared, the reader model / photo, beep pattern / LED / display text, and whether attendance appears later in myAakash.
 
 ---
 
-## 3. What v3.1.2 adds over v3.1
+## 3. What v3.1.3 adds over v3.1
 
 1. **Correct MIFARE Classic classification.**
    - `MifareClassic` tech wins over `NfcA`; Type 2 / NTAG diagnostics are skipped for this card.
@@ -75,13 +89,14 @@ So **no ordinary HCE code change can make the phone become this card**. The work
    - Re-tap verification compares the **new UID** and all data/access bytes; Key A is masked on read, so trailer key bytes are not falsely compared.
    - `COPY FULL DUMP + KEY MAP` and `SHARE DUMP TEXT` export a MCT/Proxmark-friendly text report.
 4. **HCE is diagnostics only.** The app does not auto-arm HCE for MIFARE Classic. The Quick Settings tile, status line and logs say `HCE DIAGNOSTICS`, not "punch". A MIFARE Classic reader will never reach `HostApduService`, so an empty APDU log is expected.
-5. **Printed barcode is not this card's credential.** The printed barcode / Roll No / User ID / Branch Term are not hardcoded and no camera barcode scanner path is built. Official Aakash pages show the institute can ingest barcode **or** RFID **or** biometric machines (§2.1), but your own NFC punch test makes the embedded MIFARE Classic chip the active path here.
+5. **Printed barcode is not this card's credential.** The printed barcode / Roll No / User ID / Branch Term are not hardcoded and no camera barcode scanner path is built. Official Aakash pages show the institute can ingest barcode **or** RFID **or** biometric machines (§2.1). The captured NFC credential is the embedded MIFARE Classic chip, but a later tap produced only a beep with no attendance/SMS, so backend success is **not** claimed (§2.2).
 6. **No guessed branch credential.** Saharanpur address/phone and `CC-028` appear only as context. The exact credential comes from the physical card's UID, block 0 and sector data.
 7. **Unit tests.** JUnit tests cover NDEF parsing, APDU wildcard rules, hex/status words and MIFARE block-0 BCC validation.
 8. **Deep official-source research (§2.1).** README and first-run help now state that Aakash supports multiple attendance capture types, while no public source names the Saharanpur reader model. The app notes that this is institution-level capability, not proof of your branch's protocol.
 9. **Screenshot label cleanups.** `MIFARE: MIFARE Classic 1K` now uses `MifareClassic.getSize()` instead of the misleading generic `MIFARE Classic 1K/4K`; the old "exact AAKASH branch identifier must be read from this card" note is replaced with a truthful "no NDEF / PSID / branch identifier in this dump" note; a full dump with all `FFFFFFFFFFFF` keys now says so explicitly.
-10. **Nuanced dialogs.** First-run help and the registration dialog mention institute-wide Barcode/RFID/biometric support but keep your card's NFC-confirmed path. `MIFARE_VERIFY_OK` still means dump match only, **not** an attendance punch.
+10. **Nuanced dialogs.** First-run help and the registration dialog mention institute-wide Barcode/RFID/biometric support but no longer claim NFC punch success. `MIFARE_VERIFY_OK` means dump match only; a reader beep and `9000` APDUs are **not** an attendance punch.
 11. **v3.1.2 leftover cleanup.** The v3.1.1 registration screenshots still showed `EXPECTED NDEF BRANCH PREFIX (OPTIONAL) = AAKASH` at the bottom, even though the same screen said `Aakash identifier: not found` and `No NDEF text / AAKASH / PSID credential was found`. That field is now **hidden for MIFARE Classic**, the guessed `AAKASH` default is removed, old saved profiles are sanitised on load, and `STUDENT ID / ROLL NO` is explicitly marked **label only**. The Type-2/NTAG writer also refuses to fabricate `AAKASH`, PSID or student text when no exact NDEF bytes exist. `NfcUtils.findAakashIdentifier()` is documented as reporting literal captured text only, never inventing a credential.
+12. **v3.1.3 honesty fix after real-reader feedback (§2.2).** The user clarified that a tap produces a **beep but no attendance record and no SMS**. All earlier "NFC punching was confirmed" wording is removed from compatibility text, notes, first-run help, registration dialog and magic-card verify message. A new note says a beep is **not** proof of a successful punch and only institute backend confirmation counts. `MIFARE_VERIFY_OK` now also warns that a reader beep alone is not success.
 
 The single card profile is encrypted locally with AES-256-GCM using an Android Keystore key. Nothing is uploaded. The older Type-2/NTAG sticker writer is retained for cards that really are Type 2, but is hidden for this MIFARE Classic card.
 
@@ -89,15 +104,15 @@ The single card profile is encrypted locally with AES-256-GCM using an Android K
 
 ## 4. Install / use
 
-APK: [release `v3.1.2-mifare-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.1.2-mifare-saharanpur/app-release.apk)
+APK: [release `v3.1.3-mifare-saharanpur` → `app-release.apk`](https://github.com/pavit12301611/psd-nfc-app/releases/download/v3.1.3-mifare-saharanpur/app-release.apk)
 
 1. Open **Aakash Saharanpur ID** → **REGISTER / REPLACE CARD** → hold the physical Aakash ID card to the back of the phone.
 2. Review: `MIFARE Classic 1K / Crypto1`, 16/16 sectors dump, key entries, block 0, SAK/ATQA.
 3. Tap **WRITE / EXPORT MIFARE MAGIC CARD DUMP**.
 4. If the dump is complete, hold a blank **Gen2/CUID MIFARE Classic 1K, 4-byte UID** magic card to the phone. Keep it still until `MIFARE_WRITE_OK`.
-5. Remove and re-tap it; wait for `MIFARE_VERIFY_OK` (UID + dump match).
-6. Attach the written magic card to the phone/card and test at the institute reader.
-7. If the reader rejects it:
+5. Remove and re-tap it; wait for `MIFARE_VERIFY_OK`. This means **UID + dump match only**, not institute reader acceptance.
+6. Attach the written magic card to the phone/card and test at the institute reader. **A beep alone is not success**: check the actual attendance record, parent SMS, myAakash or the centre's backend.
+7. If the reader beeps but attendance is still not registered:
    - It may detect/reject "Chinese magic" cards [1](https://www.blackhillsinfosec.com/rfid-proximity-cloning-attacks/).
    - It may require custom sector keys not found by the app; recover them with MIFARE Classic Tool / Proxmark [3](https://shop.mtoolstec.com/mifare-classic-tool-tutorial) [8](https://www.gavinjl.me/proxmark-3-cloning-a-mifare-classic-1k/).
    - Use the physical card, ask the institute to enroll the clone UID, or use an authorised external emulator such as ChameleonUltra / Proxmark / Flipper [6](https://github.com/RfidResearchGroup/ChameleonUltra/blob/main/CHANGELOG.md).
@@ -124,7 +139,8 @@ Example exported key line:
 - **Custom keys / access bits:** if any sector is not readable with common keys, the dump is incomplete and the writer is disabled. Bad access bits can irreversibly block a sector [1](https://github.com/XaviTorello/mifare-classic-toolkit/blob/master/README.md).
 - **Reader behaviour unknown:** it may check only the UID, one authenticated sector, a value block, a backend database, or the original card's silicon behaviour. Without a reader trace / full key recovery, "perfect" cannot be promised.
 - **Institute policy:** the app cannot add a clone UID to the institute's allowlist. Enrollment may require Aakash admin.
-- **"Perfect" compatibility:** cannot be promised without the actual reader model and a full card/reader trace. Green CI, `MIFARE_VERIFY_OK` and `9000` APDUs are **not** proof of an attendance punch.
+- **"Perfect" compatibility:** cannot be promised without the actual reader model and a full card/reader trace. Green CI, a reader beep, `MIFARE_VERIFY_OK` and `9000` APDUs are **not** proof of an attendance punch.
+- **Real-reader feedback (2026-11-06):** a tap produced a beep but no attendance record and no SMS. The app now reports this honestly; backend acceptance remains unconfirmed (§2.2).
 - **No real punch tested:** no institute reader was available in this workspace.
 
 ---
@@ -136,7 +152,7 @@ Pushing to `arena/87e17c3d-psd-nfc-app` runs `.github/workflows/build-apk.yml`:
 - JDK 17 + Android SDK 34 + Gradle 8.7,
 - `./gradlew --no-daemon --stacktrace test assembleRelease`,
 - signed APK uploaded as artifact `aakash-mifare-saharanpur-apk`,
-- attached to release `v3.1.2-mifare-saharanpur`.
+- attached to release `v3.1.3-mifare-saharanpur`.
 
 Local:
 
